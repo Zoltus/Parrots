@@ -2,6 +2,7 @@ package sh.zoltus.parrots.player;
 
 import lombok.Getter;
 import net.minecraft.world.entity.player.EntityHuman;
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Parrot;
 import org.bukkit.entity.Player;
 
@@ -29,6 +30,7 @@ public class Holder {
     public void refreshShoulders() {
         setLeftShoulder(leftShoulder);
         setRightShoulder(rightShoulder);
+        Bukkit.broadcastMessage("aa: " + leftShoulder);
     }
 
     public void setLeftShoulder(Parrot pet) {

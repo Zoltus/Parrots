@@ -6,7 +6,6 @@ plugins {
     java
     idea
     id("com.github.johnrengelman.shadow") version "7.1.2"
-    id("io.github.patrick.remapper") version "1.2.0"
 }
 
 idea {
@@ -44,12 +43,7 @@ tasks.compileJava {
     options.encoding = "UTF-8"
 }
 
-tasks.remap {
-    version.set("1.18.2")
-}
-
 tasks.jar {
-    dependsOn("remap")
     include("org.bstats:bstats-bukkit:3.0.0")
     from(configurations.compileClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
 }
