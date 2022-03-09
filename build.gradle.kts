@@ -6,6 +6,7 @@ plugins {
     java
     idea
     id("com.github.johnrengelman.shadow") version "7.1.2"
+    id("io.github.patrick.remapper") version "1.2.0"
 }
 
 idea {
@@ -30,8 +31,8 @@ dependencies {
     //Shade
     implementation("org.bstats:bstats-bukkit:3.0.0")
     //compileOnly("org.jetbrains:annotations:22.0.0")
-    compileOnly("org.spigotmc:spigot:1.18.1-R0.1-SNAPSHOT")
-    compileOnly("org.spigotmc:minecraft-server:1.18.1-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:spigot:1.18.2-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:minecraft-server:1.18.2-R0.1-SNAPSHOT")
     //Annotations
     compileOnly("org.projectlombok:lombok:1.18.22")
     annotationProcessor("org.projectlombok:lombok:1.18.22")
@@ -43,7 +44,12 @@ tasks.compileJava {
     options.encoding = "UTF-8"
 }
 
+tasks.remap {
+    version.set("1.18.2")
+}
+
 tasks.jar {
+    dependsOn("remap")
     include("org.bstats:bstats-bukkit:3.0.0")
     from(configurations.compileClasspath.get().map { if (it.isDirectory) it else zipTree(it) })
 }
