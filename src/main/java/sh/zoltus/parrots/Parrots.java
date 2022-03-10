@@ -4,7 +4,6 @@ import jdk.jfr.Description;
 import lombok.Getter;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.level.EntityPlayer;
-import net.minecraft.world.entity.player.EntityHuman;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.NamespacedKey;
 import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer;
@@ -144,7 +143,7 @@ public class Parrots extends JavaPlugin implements Listener {
                     p.sendMessage("left: " + p.getShoulderEntityLeft());
                     p.sendMessage("right: " + p.getShoulderEntityRight());
                 }
-                case "//mounttime" -> {
+                case "//mounttime" -> {//
                     try {
                         Field f = ep.getClass().getSuperclass().getDeclaredField("f");
                         f.setAccessible(true);
