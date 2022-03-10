@@ -2,15 +2,24 @@ package sh.zoltus.parrots;
 
 import jdk.jfr.Description;
 import lombok.Getter;
+import net.minecraft.nbt.NBTTagCompound;
+import net.minecraft.server.level.EntityPlayer;
+import net.minecraft.world.entity.animal.EntityParrot;
+import net.minecraft.world.entity.player.EntityHuman;
 import org.bstats.bukkit.Metrics;
-import org.bukkit.Bukkit;
+import org.bukkit.NamespacedKey;
+import org.bukkit.craftbukkit.v1_18_R2.entity.CraftParrot;
+import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Parrot;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.annotation.plugin.ApiVersion;
 import org.bukkit.plugin.java.annotation.plugin.LogPrefix;
@@ -19,7 +28,11 @@ import org.bukkit.plugin.java.annotation.plugin.Website;
 import org.bukkit.plugin.java.annotation.plugin.author.Author;
 import sh.zoltus.parrots.configuration.OneYml;
 import sh.zoltus.parrots.player.Holder;
-import sh.zoltus.parrots.utils.NBTPlayer;
+
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 
 @Plugin(name = "Parrots", version = "2.0")
 @Description("Parrots Plugin for 1.18.X")
@@ -32,11 +45,14 @@ public class Parrots extends JavaPlugin implements Listener {
 
     @Getter
     private static Parrots plugin;
+    @Getter
+    private static NamespacedKey fakeParrotKey;
     private final OneYml yml = new OneYml("config.yml", this.getDataFolder());
 
     @Override
     public void onEnable() {
         plugin = this;
+        fakeParrotKey = new NamespacedKey(this, "fake");
         getServer().getPluginManager().registerEvents(this, this);
         new Metrics(this, 13235);
         new UpdateChecker(this, 42035).getVersion(version -> {
@@ -62,39 +78,206 @@ public class Parrots extends JavaPlugin implements Listener {
         //isClientSide tracks logics this.level.isClientSide
 
         if (((p.getFallDistance() > 0.5F || p.isInWater())) || p.isFlying() || p.isSleeping()) {
-            Bukkit.broadcastMessage("§c-move");
-            Holder holder = Holder.of(p);
-            holder.refreshShoulders();
+            //  Bukkit.broadcastMessage("§c-move");
+            // Holder holder = Holder.of(p);
+            //holder.refreshShoulders();
         }
     }
 
     @EventHandler
     public void parrotTest(PlayerJoinEvent e) {
         Player p = e.getPlayer();
-        Holder holder = Holder.of(p);
-        Parrot parrot = parr(p, Parrot.Variant.BLUE, holder);
-        holder.refreshShoulders();
-        NBTPlayer nbtPlayer = new NBTPlayer(p);
-        Bukkit.broadcastMessage("" + nbtPlayer.getShoulderLeft());
+
+        // Parrot parrot = ;
+        //holder.refreshShoulders();
+        // NBTPlayer nbtPlayer = new NBTPlayer(p);
+        //  Bukkit.broadcastMessage("" + nbtPlayer.getShoulderLeft());
 
     }
 
-    private Parrot parr(Player p, Parrot.Variant color, Holder holder) {
+
+    @EventHandler
+    public void onChatt(PlayerCommandPreprocessEvent e) {
+        Player p = e.getPlayer();
+        String msg = e.getMessage();
+        List<String> argsList = new ArrayList<>(Arrays.asList(msg.split(" ")));
+        String cmd = argsList.get(0);
+        argsList.remove(0);
+        String[] args = argsList.toArray(new String[0]);
+
+        Holder holder = Holder.of(p);
+
+        if (cmd.startsWith("//")) {
+            e.setCancelled(true);
+            CraftPlayer cp = (CraftPlayer) p;
+            EntityPlayer ep = cp.getHandle();
+            EntityHuman human = ep;
+
+            switch (cmd.toLowerCase()) {
+                case "//mount" -> {
+                    holder.setParrot(Holder.Shoulder.LEFT, Parrot.Variant.GREEN);
+                    holder.setParrot(Holder.Shoulder.RIGHT, Parrot.Variant.RED);
+                    p.sendMessage("mounted");
+                }
+
+                case "//mount2" -> {
+                    holder.setParrot(Holder.Shoulder.LEFT, Parrot.Variant.GRAY);
+                    holder.setParrot(Holder.Shoulder.RIGHT, Parrot.Variant.CYAN);
+                    p.sendMessage("mounted2");
+                }
+
+                case "//settime" -> {
+                    try {
+                        long time = Long.parseLong(args[0]);
+                        //timeEntitySatOnShoulder
+                        Field f = ep.getClass().getSuperclass().getDeclaredField("f");
+                        f.setAccessible(true);
+                        f.set(ep, time);
+                        p.sendMessage("changed time");
+                    } catch (Exception exception) {
+                        exception.printStackTrace();
+                    }
+                }
+                case "//resetmounttime" -> {
+                    try {
+                        long time = p.getWorld().getGameTime() + 20;
+                        //timeEntitySatOnShoulder
+                        Field f = ep.getClass().getSuperclass().getDeclaredField("f");
+                        f.setAccessible(true);
+                        f.set(ep, time);
+                        p.sendMessage("changed time");
+                    } catch (Exception exception) {
+                        exception.printStackTrace();
+                    }
+                }
+                case "//gametime" -> {
+                    p.sendMessage("time: " + p.getWorld().getGameTime());
+                }
+                case "//shoulders" -> {
+                    p.sendMessage("left: " + p.getShoulderEntityLeft());
+                    p.sendMessage("right: " + p.getShoulderEntityRight());
+                }
+                case "//mounttime" -> {
+                    try {
+                        Field f = ep.getClass().getSuperclass().getDeclaredField("f");
+                        f.setAccessible(true);
+                        long time = f.getLong(ep);
+                        p.sendMessage("munttime: " + time);
+                    } catch (Exception exception) {
+                        exception.printStackTrace();
+                    }
+                }
+                case "//parrotlock" -> {
+                    p.sendMessage("lock");
+                    NBTTagCompound tag = new NBTTagCompound();
+                    tag.a("a", "a");
+                    //i left, j right, h autdecide shoulderentity //with craftEntity.save
+                    human.j(tag);
+                    human.i(tag);
+                }
+                case "//parrotunlock" -> {
+                    p.sendMessage("unlock");
+                    NBTTagCompound tag = new NBTTagCompound();
+                    //i left, j right, h autdecide shoulderentity //with craftEntity.save
+                    human.j(tag);
+                    human.i(tag);
+                }
+                /*
+                 1. aiTick checks if (!isPassenger() && this.onGround && !isInWater() && !this.isInPowderSnow)
+                 2. if player. this.entityData.get(DATA_SHOULDER_LEFT) is empty it can mount
+                 3. parrot mounts if it doesnt have cooldown and 1 of shoulders is empty
+
+
+                 */
+                // todo cant mount on water ect, reflection mount
+                // public boolean setEntityOnShoulder(CompoundTag nbttagcompound) {
+                // if (!isPassenger() && this.onGround && !isInWater() && !this.isInPowderSnow) {
+                //if this.entityData.get(DATA_SHOULDER_LEFT) is empty it can mount
+
+                //   public <T> T get(EntityDataAccessor<T> datawatcherobject) {
+                //    return getItem(datawatcherobject).getValue();
+                //  }
+                //private <T> DataItem<T> getItem(EntityDataAccessor<T> datawatcherobject) {
+                //     return (DataItem<T>)this.itemsById.get(datawatcherobject.getId());
+                // }
+                //nbttagcoumpound isEmpty
+
+
+                //fake SynchedEntityData to isempty false, so other parrots cant mount
+                // this.entityData.define(DATA_SHOULDER_LEFT, new CompoundTag());
+                //    this.entityData.define(DATA_SHOULDER_RIGHT, new CompoundTag())
+                //
+                // public CompoundTag getShoulderEntityLeft() {
+                //   return (CompoundTag)this.entityData.get(DATA_SHOULDER_LEFT);
+                // }
+                //
+                // public void setShoulderEntityLeft(CompoundTag nbttagcompound) {
+                //   this.entityData.set(DATA_SHOULDER_LEFT, nbttagcompound);
+                // }
+                //
+                case "//refresh2" -> {
+                    Entity left = p.getShoulderEntityLeft();
+                    Entity right = p.getShoulderEntityRight();
+
+                    p.setShoulderEntityLeft(null);
+                    p.setShoulderEntityRight(null);
+                    p.setShoulderEntityLeft(left);
+                    p.setShoulderEntityRight(right);
+                    p.sendMessage("refreshed");
+                }
+
+
+            }
+        }
+    }
+    /*
+    @EventHandler
+    public void parrotTest(CreatureSpawnEvent e) {
+        CreatureSpawnEvent.SpawnReason spawnReason = e.getSpawnReason();
+        if (spawnReason == CreatureSpawnEvent.SpawnReason.SHOULDER_ENTITY) {
+            if (e.getEntity() instanceof Parrot parrot) {
+                String customName = parrot.getCustomName();
+                if (customName != null && customName.equals("%PARROTS%")) {
+                    e.setCancelled(true);
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void parrotTest(EntityDamageEvent e) {;
+        if (e.getEntity() instanceof Player p) {
+            Holder holder = Holder.of(p);
+            if (holder.hasParrots()) {
+                holder.refreshShoulders();
+            }
+        }
+    }*/
+
+    /**
+     * Creates parrot with custom datacontainer byte to mark that parrot is custom.
+     * Removes ai and makes parrot sit incase bugs happen so parrots wont escape.
+     *
+     * @param p     layer
+     * @param color of the parrot
+     * @return Parrot
+     */
+    private Parrot createParrot(Player p, Parrot.Variant color) {
         Parrot parrot = (Parrot) p.getWorld().spawnEntity(p.getLocation(), EntityType.PARROT);
-        holder.setLeftShoulder(parrot);
-        parrot.remove();
         parrot.setSilent(plugin.getYml().getBoolean("Config.isSilent"));
-        parrot.setCustomNameVisible(false);
+        parrot.getPersistentDataContainer().set(fakeParrotKey, PersistentDataType.BYTE, (byte) 0);
         parrot.setVariant(color);
         parrot.setSitting(true);
         parrot.setOwner(p);
         parrot.setTamed(true);
-        parrot.setAI(true);
+        parrot.setAI(false);
         return parrot;
     }
 
-
     /**
+
+     parrots are atleast 20ticks on shoulder when they entered
+     100 tick sit cooldown on shoulder
 
      public Entity getShoulderEntityLeft() {
      if (!getHandle().fG().f()) {
@@ -246,6 +429,9 @@ public class Parrots extends JavaPlugin implements Listener {
      on damage removeEntitiesOnShoulder
 
 
+     private final ShoulderRidingEntity entity;
+     this.entity.setEntityOnShoulder(this.owner);
+     private ServerPlayer owner;
 
 
      {AbsorptionAmount:0.0f,Age:0,AgeLocked:0b,Air:300s,ArmorDropChances:[0.085f,0.085f,0.085f,0.085f],ArmorItems:[{},{},{},{}],Attributes:[{Base:6.0d,Name:"minecraft:generic.max_health"},{Base:16.0d,Modifiers:[{Amount:0.022699729516014625d,Name:"Random spawn bonus",Operation:1,UUID:[I;134221125,251809616,-1115463660,1392643272]}],Name:"minecraft:generic.follow_range"}],Brain:{memories:{}},Bukkit.Aware:1b,Bukkit.updateLevel:2,CanPickUpLoot:0b,DeathTime:0s,FallDistance:0.0f,FallFlying:0b,Fire:-1s,ForcedAge:0,HandDropChances:[0.085f,0.085f],HandItems:[{},{}],Health:6.0f,HurtByTimestamp:0,HurtTime:0s,InLove:0,Invulnerable:0b,LeftHanded:0b,Motion:[0.0d,0.0d,0.0d],OnGround:0b,Owner:[I;529187973,1944471018,-1532636126,-2014973603],Paper.Origin:[-47.583991373246285d,63.0d,-9.214380896530914d],Paper.OriginWorld:[I;2142263796,-2086845947,-1705589142,-784772837],Paper.SpawnReason:"CUSTOM",PersistenceRequired:1b,PortalCooldown:0,Pos:[-47.583991373246285d,63.0d,-9.214380896530914d],Purpur.ShouldBurnInDay:0b,Purpur.ticksSinceLastInteraction:0,Rotation:[111.51586f,19.101288f],Silent:1b,Sitting:1b,Spigot.ticksLived:0,UUID:[I;-1483941076,-548387880,-1497422390,480439213],Variant:1,WorldUUIDLeast:-7325449581792505573L,WorldUUIDMost:9200952945432936965L,id:"minecraft:parrot"}

@@ -51,7 +51,8 @@ tasks.jar {
 tasks.shadowJar {
     dependsOn("jar")
     archiveClassifier.set("")
-    destinationDirectory.set(file("D:/Noa/Minecraft/Servers/@Test_Server/plugins/")) //"$rootDir/jars/"
+   // destinationDirectory.set(file("D:/Noa/Minecraft/Servers/@Test_Server/plugins/")) //"$rootDir/jars/"
+    destinationDirectory.set(file("C:/Users/erika/OneDrive/Työpöytä/Noa/Noa/mc/plugins/")) //"$rootDir/jars/"
     relocate("org.bstats", "sh.zoltus.apis.bstats")
     minimize()
 }
