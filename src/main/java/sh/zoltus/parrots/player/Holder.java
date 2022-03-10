@@ -18,38 +18,32 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+/*
+1. open menu
+2. click setparrot
+3. check if shoulder has real or fake parrot
+4. if has even 1 real parrot it drops both, because glue is for both shoulders
+5. sets fake parrot on shoulder/shoulders.
+6. locks empty shoulder if it still has parrot
+
+removing parrot:
+1. if shoulders are empty after removing it unlocks shoulders
+2. if player has even 1 parrot it only sets the other shoulder null.
+3. need to check if parrots are fakeparrots from datacontainer
+ */
 public record Holder(Player p) {
-    private static NamespacedKey fakeParrotKey = Parrots.getFakeParrotKey();
+
     private static final Map<UUID, Holder> holders = new HashMap<>();
-    //keep on login?, need to save so indentifies as custom parrot. onjoin can check if parrot has name
+    private static final NamespacedKey fakeParrotKey = Parrots.getFakeParrotKey();
 
     public Holder(Player p) {
         this.p = p;
         holders.put(p.getUniqueId(), this);
     }
 
-
-    /*
-    1. open menu
-    2. click setparrot
-    3. check if shoulder has real or fake parrot
-    4. if has even 1 real parrot it drops both, because glue is for both shoulders
-    5. sets fake parrot on shoulder/shoulders.
-    6. locks empty shoulder if it still has parrot
-
-    removing parrot:
-    1. if shoulders are empty after removing it unlocks shoulders
-    2. if player has even 1 parrot it only sets the other shoulder null.
-    3. need to check if parrots are fakeparrots from datacontainer
-
-
-
-     */
-
     public static Holder of(Player p) {
         return holders.getOrDefault(p.getUniqueId(), new Holder(p));
     }
-    //removeEntitiesOnShoulder
 
     public void refreshShoulders() {
         Entity left = p.getShoulderEntityLeft();
@@ -61,14 +55,28 @@ public record Holder(Player p) {
         p.sendMessage("refreshed");
     }
 
-    //
+    public void removeParrot(Shoulder shoulder) {
+        if (hasFakeParrots()) {
+            switch (shoulder) {
+                case LEFT -> p.setShoulderEntityLeft(null);
+                case RIGHT -> p.setShoulderEntityRight(null);
+                case BOTH -> {
+                    p.setShoulderEntityLeft(null);
+                    p.setShoulderEntityRight(null);
+                }
+            }
+        }
+        if (!hasParrots()) {
+            setGlue(false);
+            emptyShoulderLock(false);
+        }
+    }
+
     @SneakyThrows
     private void dropRealParrots() {
         CraftPlayer cp = (CraftPlayer) p;
         EntityPlayer ep = cp.getHandle();
-        Entity eParrot1 = p.getShoulderEntityLeft();
-        Entity eParrot2 = p.getShoulderEntityRight();
-        if (isRealParrot(eParrot1) || isRealParrot(eParrot2)) {
+        if (hasRealParrots()) {
             setGlue(false); // this would drop fakes aswell, need check for this?
             Method method = ep.getClass().getSuperclass().getDeclaredMethod("fE"); //Drops both parrots
             method.setAccessible(true);
@@ -77,19 +85,11 @@ public record Holder(Player p) {
         }
     }
 
-    private boolean isRealParrot(Entity entity) {
-        return entity instanceof Parrot parrot && !parrot.getPersistentDataContainer().has(fakeParrotKey, PersistentDataType.BYTE);
-    }
-
-    public enum Shoulder {
-        LEFT, RIGHT, BOTH
-    }
-
     @SneakyThrows
     public void setParrot(Shoulder shoulder, Parrot.Variant color) {
         dropRealParrots();
         Parrot parrot = (Parrot) p.getWorld().spawnEntity(p.getLocation(), EntityType.PARROT);
-        //parrot.setSilent(plugin.getYml().getBoolean("Config.isSilent"));
+        parrot.setSilent(Parrots.getPlugin().getYml().getBoolean("Config.isSilent"));
         parrot.getPersistentDataContainer().set(fakeParrotKey, PersistentDataType.BYTE, (byte) 0);
         parrot.setVariant(color);
         parrot.setSitting(true);
@@ -98,23 +98,20 @@ public record Holder(Player p) {
         parrot.setAI(false);
 
         switch (shoulder) {
-            case LEFT -> {
-                p.setShoulderEntityLeft(parrot);
-            }
-            case RIGHT -> {
-                p.setShoulderEntityRight(parrot);
-            }
+            case LEFT -> p.setShoulderEntityLeft(parrot);
+            case RIGHT -> p.setShoulderEntityRight(parrot);
         }
         setGlue(true);
         emptyShoulderLock(true);
     }
 
     //todo remove parrots, and if empty unlockshoulders and remove glue
+
     /**
      * @param glue for parrots. if true it sets gluetimer to 999, else false and parrots will drop on jump ect
      */
     @SneakyThrows
-    private void setGlue(boolean glue) {
+    public void setGlue(boolean glue) {
         CraftPlayer cp = (CraftPlayer) p;
         EntityPlayer ep = cp.getHandle();
         long time = glue ? 9999999 : 0;
@@ -141,4 +138,25 @@ public record Holder(Player p) {
             ep.j(tag);
         }
     }
+
+    private boolean hasParrots() {
+        return p.getShoulderEntityRight() != null || p.getShoulderEntityLeft() != null;
+    }
+
+    private boolean hasRealParrots() {
+        return hasParrots() && isRealParrot(p.getShoulderEntityLeft()) || isRealParrot(p.getShoulderEntityRight());
+    }
+
+    public boolean hasFakeParrots() {
+        return hasParrots() && (!isRealParrot(p.getShoulderEntityLeft()) || !isRealParrot(p.getShoulderEntityRight()));
+    }
+
+    private boolean isRealParrot(Entity entity) {
+        return entity instanceof Parrot parrot && !parrot.getPersistentDataContainer().has(fakeParrotKey, PersistentDataType.BYTE);
+    }
+
+    public enum Shoulder {
+        LEFT, RIGHT, BOTH
+    }
+
 }

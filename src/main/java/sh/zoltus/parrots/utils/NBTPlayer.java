@@ -2,19 +2,14 @@ package sh.zoltus.parrots.utils;
 
 import lombok.SneakyThrows;
 import net.minecraft.nbt.*;
-import net.minecraft.world.item.ItemStack;
 import org.apache.commons.lang.Validate;
 import org.bukkit.Bukkit;
-import org.bukkit.Location;
 import org.bukkit.OfflinePlayer;
 import org.bukkit.World;
-import org.bukkit.craftbukkit.v1_18_R2.inventory.CraftItemStack;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.UUID;
 
 

@@ -1,9 +1,46 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="EntryPointsManager">
+    <entry_points version="2.0">
+      <entry_point TYPE="field" FQNAME="sh.zoltus.parrots.player.commands.CommandHandler cmds" />
+      <entry_point TYPE="field" FQNAME="sh.zoltus.parrots.Parrots fakeParrotKey" />
+      <entry_point TYPE="field" FQNAME="sh.zoltus.parrots.player.commands.CommandHandler plugin" />
+      <entry_point TYPE="field" FQNAME="sh.zoltus.parrots.Parrots plugin" />
+      <entry_point TYPE="field" FQNAME="sh.zoltus.parrots.Parrots yml" />
+    </entry_points>
     <list size="1">
       <item index="0" class="java.lang.String" itemvalue="org.bukkit.event.EventHandler" />
     </list>
+    <pattern value="sh.zoltus.parrots.player.commands.APICommand" method="addAlias" />
+    <pattern value="sh.zoltus.parrots.player.commands.APICommand" method="addSubCommand" />
+    <pattern value="sh.zoltus.parrots.player.commands.APICommand" />
+    <pattern value="sh.zoltus.parrots.player.commands.APICommand" method="APICommand" />
+    <pattern value="sh.zoltus.parrots.player.commands.CommandHandler" />
+    <pattern value="sh.zoltus.parrots.player.commands.CommandHandler" method="CommandHandler" />
+    <pattern value="sh.zoltus.parrots.Parrots" method="createParrot" />
+    <pattern value="sh.zoltus.parrots.configuration.Database" />
+    <pattern value="sh.zoltus.parrots.player.commands.APICommand" method="execute" />
+    <pattern value="sh.zoltus.parrots.player.commands.APICommand" method="executeSubCommand" />
+    <pattern value="sh.zoltus.parrots.utils.NBTPlayer" method="getAttribute" />
+    <pattern value="sh.zoltus.parrots.configuration.OneYml" method="getOrSetDefault" />
+    <pattern value="sh.zoltus.parrots.utils.NBTPlayer" method="getShoulderLeft" />
+    <pattern value="sh.zoltus.parrots.player.commands.APICommand" method="getSubCommands" />
+    <pattern value="sh.zoltus.parrots.player.Holder" />
+    <pattern value="sh.zoltus.parrots.utils.OneGui" />
+    <pattern value="sh.zoltus.parrots.Parrots" method="move" />
+    <pattern value="sh.zoltus.parrots.utils.NBTPlayer" />
+    <pattern value="sh.zoltus.parrots.utils.NBTPlayer" method="NBTPlayer" />
+    <pattern value="sh.zoltus.parrots.utils.NBTPlayer" method="newDoubleList" />
+    <pattern value="sh.zoltus.parrots.utils.NBTPlayer" method="newFloatList" />
+    <pattern value="sh.zoltus.parrots.Parrots" method="onChatt" />
+    <pattern value="sh.zoltus.parrots.configuration.OneYml" />
+    <pattern value="sh.zoltus.parrots.player.commands.APICommand" method="onTabComplete" />
+    <pattern value="sh.zoltus.parrots.Parrots" />
+    <pattern value="sh.zoltus.parrots.Parrots" method="parrotTest" />
+    <pattern value="sh.zoltus.parrots.player.commands.CommandHandler" method="registerCommand" />
+    <pattern value="sh.zoltus.parrots.player.Holder" method="removeParrot" />
+    <pattern value="sh.zoltus.parrots.utils.NBTPlayer" method="save" />
+    <pattern value="sh.zoltus.parrots.utils.NBTPlayer" method="setShoulderLeft" />
   </component>
   <component name="ExternalStorageConfigurationManager" enabled="true" />
   <component name="FrameworkDetectionExcludesConfiguration">

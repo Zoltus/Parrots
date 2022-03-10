@@ -4,11 +4,9 @@ import jdk.jfr.Description;
 import lombok.Getter;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.level.EntityPlayer;
-import net.minecraft.world.entity.animal.EntityParrot;
 import net.minecraft.world.entity.player.EntityHuman;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.NamespacedKey;
-import org.bukkit.craftbukkit.v1_18_R2.entity.CraftParrot;
 import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
@@ -18,7 +16,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.annotation.plugin.ApiVersion;
@@ -70,29 +68,21 @@ public class Parrots extends JavaPlugin implements Listener {
     }
 
     @EventHandler
-    public void move(PlayerMoveEvent e) {
+    public void move(PlayerToggleFlightEvent e) {
         Player p = e.getPlayer();
-
-
-        //Reflection isInPowderSnow
-        //isClientSide tracks logics this.level.isClientSide
-
-        if (((p.getFallDistance() > 0.5F || p.isInWater())) || p.isFlying() || p.isSleeping()) {
-            //  Bukkit.broadcastMessage("§c-move");
-            // Holder holder = Holder.of(p);
-            //holder.refreshShoulders();
+        if (!e.isFlying()) {
+            Holder holder = Holder.of(p);
+            holder.refreshShoulders();
         }
     }
 
     @EventHandler
     public void parrotTest(PlayerJoinEvent e) {
         Player p = e.getPlayer();
-
-        // Parrot parrot = ;
-        //holder.refreshShoulders();
-        // NBTPlayer nbtPlayer = new NBTPlayer(p);
-        //  Bukkit.broadcastMessage("" + nbtPlayer.getShoulderLeft());
-
+        Holder holder = Holder.of(p);
+        if (holder.hasFakeParrots()) {
+            holder.setGlue(true);
+        }
     }
 
 
@@ -111,7 +101,6 @@ public class Parrots extends JavaPlugin implements Listener {
             e.setCancelled(true);
             CraftPlayer cp = (CraftPlayer) p;
             EntityPlayer ep = cp.getHandle();
-            EntityHuman human = ep;
 
             switch (cmd.toLowerCase()) {
                 case "//mount" -> {
@@ -150,9 +139,7 @@ public class Parrots extends JavaPlugin implements Listener {
                         exception.printStackTrace();
                     }
                 }
-                case "//gametime" -> {
-                    p.sendMessage("time: " + p.getWorld().getGameTime());
-                }
+                case "//gametime" -> p.sendMessage("time: " + p.getWorld().getGameTime());
                 case "//shoulders" -> {
                     p.sendMessage("left: " + p.getShoulderEntityLeft());
                     p.sendMessage("right: " + p.getShoulderEntityRight());
@@ -172,15 +159,15 @@ public class Parrots extends JavaPlugin implements Listener {
                     NBTTagCompound tag = new NBTTagCompound();
                     tag.a("a", "a");
                     //i left, j right, h autdecide shoulderentity //with craftEntity.save
-                    human.j(tag);
-                    human.i(tag);
+                    ep.j(tag);
+                    ep.i(tag);
                 }
                 case "//parrotunlock" -> {
                     p.sendMessage("unlock");
                     NBTTagCompound tag = new NBTTagCompound();
                     //i left, j right, h autdecide shoulderentity //with craftEntity.save
-                    human.j(tag);
-                    human.i(tag);
+                    ep.j(tag);
+                    ep.i(tag);
                 }
                 /*
                  1. aiTick checks if (!isPassenger() && this.onGround && !isInWater() && !this.isInPowderSnow)
@@ -274,8 +261,7 @@ public class Parrots extends JavaPlugin implements Listener {
         return parrot;
     }
 
-    /**
-
+    /*
      parrots are atleast 20ticks on shoulder when they entered
      100 tick sit cooldown on shoulder
 
