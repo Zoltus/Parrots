@@ -2,13 +2,9 @@ package sh.zoltus.parrots;
 
 import jdk.jfr.Description;
 import lombok.Getter;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.server.level.EntityPlayer;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.NamespacedKey;
 import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Parrot;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -16,7 +12,6 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerToggleFlightEvent;
-import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.annotation.plugin.ApiVersion;
 import org.bukkit.plugin.java.annotation.plugin.LogPrefix;
@@ -26,7 +21,6 @@ import org.bukkit.plugin.java.annotation.plugin.author.Author;
 import sh.zoltus.parrots.configuration.OneYml;
 import sh.zoltus.parrots.player.Holder;
 
-import java.lang.reflect.Field;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -61,17 +55,22 @@ public class Parrots extends JavaPlugin implements Listener {
         });
     }
 
-    @Override
-    public void onDisable() {
-        //re
-    }
+    /* todo just incase check if its custom and it cancels it
+    @EventHandler
+    public void move(CreatureSpawnEvent e) {
+        if (e.getEntity() instanceof Parrots && e.getSpawnReason() == CreatureSpawnEvent.SpawnReason.SHOULDER_ENTITY) {
+
+        }
+    }*/
 
     @EventHandler
     public void move(PlayerToggleFlightEvent e) {
         Player p = e.getPlayer();
         if (!e.isFlying()) {
             Holder holder = Holder.of(p);
-            holder.refreshShoulders();
+            if (holder.hasFakeParrots()) {
+                holder.refreshShoulders();
+            }
         }
     }
 
@@ -81,6 +80,7 @@ public class Parrots extends JavaPlugin implements Listener {
         Holder holder = Holder.of(p);
         if (holder.hasFakeParrots()) {
             holder.setGlue(true);
+            holder.lockEmptyShoulders(true);
         }
     }
 
@@ -92,28 +92,44 @@ public class Parrots extends JavaPlugin implements Listener {
         List<String> argsList = new ArrayList<>(Arrays.asList(msg.split(" ")));
         String cmd = argsList.get(0);
         argsList.remove(0);
-        String[] args = argsList.toArray(new String[0]);
+        // String[] args = argsList.toArray(new String[0]);
 
         Holder holder = Holder.of(p);
 
         if (cmd.startsWith("//")) {
             e.setCancelled(true);
             CraftPlayer cp = (CraftPlayer) p;
-            EntityPlayer ep = cp.getHandle();
+            //EntityPlayer ep = cp.getHandle();
 
             switch (cmd.toLowerCase()) {
-                case "//mount" -> {
-                    holder.setParrot(Holder.Shoulder.LEFT, Parrot.Variant.GREEN);
-                    holder.setParrot(Holder.Shoulder.RIGHT, Parrot.Variant.RED);
-                    p.sendMessage("mounted");
+                case "//ml" -> {
+                    holder.setParrot(Holder.Shoulder.LEFT, Parrot.Variant.BLUE);
+                    p.sendMessage("mountedl");
                 }
-
-                case "//mount2" -> {
+                case "//mr" -> {
+                    holder.setParrot(Holder.Shoulder.RIGHT, Parrot.Variant.RED);
+                    p.sendMessage("mountedr");
+                }
+                case "//mb" -> {
                     holder.setParrot(Holder.Shoulder.LEFT, Parrot.Variant.GRAY);
                     holder.setParrot(Holder.Shoulder.RIGHT, Parrot.Variant.CYAN);
-                    p.sendMessage("mounted2");
+                    p.sendMessage("mountedb");
+                }
+                case "//clearl" -> {
+                    holder.removeParrot(Holder.Shoulder.LEFT);
+                    p.sendMessage("removedL");
+                }
+                case "//clearr" -> {
+                    holder.removeParrot(Holder.Shoulder.RIGHT);
+                    p.sendMessage("removedr");
+                }
+                case "//clearb" -> {
+                    holder.removeParrot(Holder.Shoulder.BOTH);
+                    p.sendMessage("removedb");
                 }
 
+
+                /*
                 case "//settime" -> {
                     try {
                         long time = Long.parseLong(args[0]);
@@ -168,6 +184,17 @@ public class Parrots extends JavaPlugin implements Listener {
                     ep.j(tag);
                     ep.i(tag);
                 }
+                case "//refresh2" -> {
+                    Entity left = p.getShoulderEntityLeft();
+                    Entity right = p.getShoulderEntityRight();
+
+                    p.setShoulderEntityLeft(null);
+                    p.setShoulderEntityRight(null);
+                    p.setShoulderEntityLeft(left);
+                    p.setShoulderEntityRight(right);
+                    p.sendMessage("refreshed");
+                }*/
+
                 /*
                  1. aiTick checks if (!isPassenger() && this.onGround && !isInWater() && !this.isInPowderSnow)
                  2. if player. this.entityData.get(DATA_SHOULDER_LEFT) is empty it can mount
@@ -201,16 +228,6 @@ public class Parrots extends JavaPlugin implements Listener {
                 //   this.entityData.set(DATA_SHOULDER_LEFT, nbttagcompound);
                 // }
                 //
-                case "//refresh2" -> {
-                    Entity left = p.getShoulderEntityLeft();
-                    Entity right = p.getShoulderEntityRight();
-
-                    p.setShoulderEntityLeft(null);
-                    p.setShoulderEntityRight(null);
-                    p.setShoulderEntityLeft(left);
-                    p.setShoulderEntityRight(right);
-                    p.sendMessage("refreshed");
-                }
 
 
             }
@@ -240,7 +257,7 @@ public class Parrots extends JavaPlugin implements Listener {
         }
     }*/
 
-    /**
+    /*
      * Creates parrot with custom datacontainer byte to mark that parrot is custom.
      * Removes ai and makes parrot sit incase bugs happen so parrots wont escape.
      *
@@ -248,17 +265,6 @@ public class Parrots extends JavaPlugin implements Listener {
      * @param color of the parrot
      * @return Parrot
      */
-    private Parrot createParrot(Player p, Parrot.Variant color) {
-        Parrot parrot = (Parrot) p.getWorld().spawnEntity(p.getLocation(), EntityType.PARROT);
-        parrot.setSilent(plugin.getYml().getBoolean("Config.isSilent"));
-        parrot.getPersistentDataContainer().set(fakeParrotKey, PersistentDataType.BYTE, (byte) 0);
-        parrot.setVariant(color);
-        parrot.setSitting(true);
-        parrot.setOwner(p);
-        parrot.setTamed(true);
-        parrot.setAI(false);
-        return parrot;
-    }
 
     /*
      parrots are atleast 20ticks on shoulder when they entered

@@ -52,6 +52,7 @@ public record Holder(Player p) {
         p.setShoulderEntityRight(null);
         p.setShoulderEntityLeft(left);
         p.setShoulderEntityRight(right);
+        lockEmptyShoulders(true); //Needs relock when  fly toggle
         p.sendMessage("refreshed");
     }
 
@@ -66,9 +67,12 @@ public record Holder(Player p) {
                 }
             }
         }
-        if (!hasParrots()) {
+
+        if (hasFakeParrots()) {
+            lockEmptyShoulders(true);
+        } else if (!hasParrots()) {
+            lockEmptyShoulders(false);
             setGlue(false);
-            emptyShoulderLock(false);
         }
     }
 
@@ -77,11 +81,10 @@ public record Holder(Player p) {
         CraftPlayer cp = (CraftPlayer) p;
         EntityPlayer ep = cp.getHandle();
         if (hasRealParrots()) {
-            setGlue(false); // this would drop fakes aswell, need check for this?
             Method method = ep.getClass().getSuperclass().getDeclaredMethod("fE"); //Drops both parrots
             method.setAccessible(true);
             method.invoke(ep);
-            emptyShoulderLock(false); //this resets shoulders, useless here probably
+            lockEmptyShoulders(false); //this resets shoulders, useless here probably
         }
     }
 
@@ -102,7 +105,7 @@ public record Holder(Player p) {
             case RIGHT -> p.setShoulderEntityRight(parrot);
         }
         setGlue(true);
-        emptyShoulderLock(true);
+        lockEmptyShoulders(true);
     }
 
     //todo remove parrots, and if empty unlockshoulders and remove glue
@@ -123,19 +126,22 @@ public record Holder(Player p) {
     }
 
     //i left, j right, h autdecide shoulderentity //with craftEntity.save
-    private void emptyShoulderLock(boolean lock) {
+    public void lockEmptyShoulders(boolean lock) {
         CraftPlayer cp = (CraftPlayer) p;
         EntityPlayer ep = cp.getHandle();
         NBTTagCompound tag = new NBTTagCompound();
-        p.sendMessage("lock left " + lock);
         if (lock) {
             tag.a("lock", "lock");
         }
         if (p.getShoulderEntityLeft() == null) {
             ep.i(tag);
+            if (lock)
+                p.sendMessage("lockedLEft");
         }
         if (p.getShoulderEntityRight() == null) {
             ep.j(tag);
+            if (lock)
+                p.sendMessage("lockedright");
         }
     }
 
