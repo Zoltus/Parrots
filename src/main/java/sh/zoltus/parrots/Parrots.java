@@ -11,7 +11,6 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.annotation.plugin.ApiVersion;
 import org.bukkit.plugin.java.annotation.plugin.LogPrefix;
@@ -19,6 +18,8 @@ import org.bukkit.plugin.java.annotation.plugin.Plugin;
 import org.bukkit.plugin.java.annotation.plugin.Website;
 import org.bukkit.plugin.java.annotation.plugin.author.Author;
 import sh.zoltus.parrots.configuration.OneYml;
+import sh.zoltus.parrots.events.ParrotLeaveEvent;
+import sh.zoltus.parrots.events.ParrotLeaveListener;
 import sh.zoltus.parrots.player.Holder;
 
 import java.util.ArrayList;
@@ -34,6 +35,7 @@ import java.util.List;
 @Getter
 public class Parrots extends JavaPlugin implements Listener {
 
+    //todo parrot fall event
     @Getter
     private static Parrots plugin;
     @Getter
@@ -45,6 +47,7 @@ public class Parrots extends JavaPlugin implements Listener {
         plugin = this;
         fakeParrotKey = new NamespacedKey(this, "fake");
         getServer().getPluginManager().registerEvents(this, this);
+        getServer().getPluginManager().registerEvents(new ParrotLeaveListener(), this);
         new Metrics(this, 13235);
         new UpdateChecker(this, 42035).getVersion(version -> {
             if (this.getDescription().getVersion().equals(version)) {
@@ -64,13 +67,11 @@ public class Parrots extends JavaPlugin implements Listener {
     }*/
 
     @EventHandler
-    public void move(PlayerToggleFlightEvent e) {
+    public void parrotLeaveEvent(ParrotLeaveEvent e) {
         Player p = e.getPlayer();
-        if (!e.isFlying()) {
-            Holder holder = Holder.of(p);
-            if (holder.hasFakeParrots()) {
-                holder.refreshShoulders();
-            }
+        Holder holder = Holder.of(p);
+        if (holder.hasFakeParrots()) {
+            holder.refreshShoulders();
         }
     }
 
