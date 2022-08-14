@@ -8,10 +8,11 @@ import org.bukkit.event.player.PlayerToggleFlightEvent;
 
 public class ParrotLeaveListener implements Listener {
 
+    //todo
     @EventHandler
-    public void move(PlayerToggleFlightEvent e) {
+    public void flyEvent(PlayerToggleFlightEvent e) {
         Player p = e.getPlayer();
-        if (!e.isFlying()) {
+        if (!e.isFlying() && (p.getShoulderEntityLeft() != null || p.getShoulderEntityRight() != null)) {
            Bukkit.getPluginManager().callEvent(new ParrotLeaveEvent(p));
         }
     }

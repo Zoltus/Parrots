@@ -1,6 +1,4 @@
 Config:
-  DefaultParrotColor: BLUE
-  DefaultSide: Right
   isSilent: true
 Messages:
   GuiName: §5Parrot Menu!

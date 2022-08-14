@@ -85,7 +85,5 @@ public class OneYml extends YamlConfiguration {
         }
         return null;
     }
-
-    //autosave on edit? bulkedit?
 }
 

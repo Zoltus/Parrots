@@ -4,7 +4,6 @@ import jdk.jfr.Description;
 import lombok.Getter;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.NamespacedKey;
-import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer;
 import org.bukkit.entity.Parrot;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -20,6 +19,8 @@ import org.bukkit.plugin.java.annotation.plugin.author.Author;
 import sh.zoltus.parrots.configuration.OneYml;
 import sh.zoltus.parrots.events.ParrotLeaveEvent;
 import sh.zoltus.parrots.events.ParrotLeaveListener;
+import sh.zoltus.parrots.gui.GuiHandler;
+import sh.zoltus.parrots.gui.ParrotGui;
 import sh.zoltus.parrots.player.Holder;
 
 import java.util.ArrayList;
@@ -27,15 +28,16 @@ import java.util.Arrays;
 import java.util.List;
 
 @Plugin(name = "Parrots", version = "2.0")
-@Description("Parrots Plugin for 1.18.X")
+@Description("Parrots Plugin for 1.19.X")
 @Author("Zoltus")
 @Website("https://www.spigotmc.org/members/zoltus.306747/")
 @LogPrefix("Parrots")
-@ApiVersion(ApiVersion.Target.v1_18)
+@ApiVersion(ApiVersion.Target.v1_19)
 @Getter
 public class Parrots extends JavaPlugin implements Listener {
 
-    //todo parrot fall event
+    //todo parrot fall event?
+    //todo kill parrots if fail to set on shoulders
     @Getter
     private static Parrots plugin;
     @Getter
@@ -45,9 +47,11 @@ public class Parrots extends JavaPlugin implements Listener {
     @Override
     public void onEnable() {
         plugin = this;
+        //todo change key to fakeparrot
         fakeParrotKey = new NamespacedKey(this, "fake");
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new ParrotLeaveListener(), this);
+        getServer().getPluginManager().registerEvents(new GuiHandler(), this);
         new Metrics(this, 13235);
         new UpdateChecker(this, 42035).getVersion(version -> {
             if (this.getDescription().getVersion().equals(version)) {
@@ -99,7 +103,7 @@ public class Parrots extends JavaPlugin implements Listener {
 
         if (cmd.startsWith("//")) {
             e.setCancelled(true);
-            CraftPlayer cp = (CraftPlayer) p;
+          //  CraftPlayer cp = (CraftPlayer) p;
             //EntityPlayer ep = cp.getHandle();
 
             switch (cmd.toLowerCase()) {
@@ -123,6 +127,10 @@ public class Parrots extends JavaPlugin implements Listener {
                 case "//clearr" -> {
                     holder.removeParrot(Holder.Shoulder.RIGHT);
                     p.sendMessage("removedr");
+                }
+                case "//gui" -> {
+                    ParrotGui parrotGui = ParrotGui.get(p);
+                    parrotGui.show();
                 }
                 case "//clearb" -> {
                     holder.removeParrot(Holder.Shoulder.BOTH);

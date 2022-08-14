@@ -1,4 +1,4 @@
-# Auto-generated plugin.yml, generated at 2022/03/10 20:21:38 by org.bukkit.plugin.java.annotation.PluginAnnotationProcessor
+# Auto-generated plugin.yml, generated at 2022/08/14 19:15:37 by org.bukkit.plugin.java.annotation.PluginAnnotationProcessor
 
 main: sh.zoltus.parrots.Parrots
 name: Parrots
@@ -8,4 +8,4 @@ website: https://www.spigotmc.org/members/zoltus.306747/
 prefix: Parrots
 commands: {}
 permissions: {}
-api-version: '1.18'
+api-version: '1.19'

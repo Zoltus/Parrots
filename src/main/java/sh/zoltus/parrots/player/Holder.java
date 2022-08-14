@@ -4,7 +4,7 @@ import lombok.SneakyThrows;
 import net.minecraft.nbt.NBTTagCompound;
 import net.minecraft.server.level.EntityPlayer;
 import org.bukkit.NamespacedKey;
-import org.bukkit.craftbukkit.v1_18_R2.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_19_R1.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Parrot;
@@ -67,7 +67,6 @@ public record Holder(Player p) {
                 }
             }
         }
-
         if (hasFakeParrots()) {
             lockEmptyShoulders(true);
         } else if (!hasParrots()) {
@@ -78,10 +77,13 @@ public record Holder(Player p) {
 
     @SneakyThrows
     private void dropRealParrots() {
+        //todo remove reflection
         CraftPlayer cp = (CraftPlayer) p;
         EntityPlayer ep = cp.getHandle();
         if (hasRealParrots()) {
+            //todo make better
             Method method = ep.getClass().getSuperclass().getDeclaredMethod("fE"); //Drops both parrots
+            //fe == 1.18.2, fD == 1.18, 1.19 = fP
             method.setAccessible(true);
             method.invoke(ep);
             lockEmptyShoulders(false); //this resets shoulders, useless here probably
@@ -99,10 +101,17 @@ public record Holder(Player p) {
         parrot.setOwner(p);
         parrot.setTamed(true);
         parrot.setAI(false);
+        //todo? wasnt orginally here
+        parrot.remove();
 
         switch (shoulder) {
             case LEFT -> p.setShoulderEntityLeft(parrot);
             case RIGHT -> p.setShoulderEntityRight(parrot);
+            case BOTH -> {
+                //todo test if same parrot can be on both sametime
+                p.setShoulderEntityRight(parrot);
+                p.setShoulderEntityLeft(parrot);
+            }
         }
         setGlue(true);
         lockEmptyShoulders(true);
@@ -119,17 +128,18 @@ public record Holder(Player p) {
         EntityPlayer ep = cp.getHandle();
         long time = glue ? 9999999 : 0;
         //timeEntitySatOnShoulder
-        Field f = ep.getClass().getSuperclass().getDeclaredField("f");
+        Field f = ep.getClass().getSuperclass().getDeclaredField("co"); //f == 1.18, co == 1.19
         f.setAccessible(true);
         f.set(ep, time);
         p.sendMessage("glued");
     }
 
-    //i left, j right, h autdecide shoulderentity //with craftEntity.save
+    //i left, j right, h autodecide? shoulderentity //with craftEntity.save
     public void lockEmptyShoulders(boolean lock) {
         CraftPlayer cp = (CraftPlayer) p;
         EntityPlayer ep = cp.getHandle();
         NBTTagCompound tag = new NBTTagCompound();
+        //todo check reflections old ones are 1.18.2
         if (lock) {
             tag.a("lock", "lock");
         }
@@ -164,5 +174,4 @@ public record Holder(Player p) {
     public enum Shoulder {
         LEFT, RIGHT, BOTH
     }
-
 }

@@ -5,7 +5,7 @@
       <profile name="Gradle Imported" enabled="true">
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
-          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.22/lombok-1.18.22.jar" />
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.24/lombok-1.18.24.jar" />
           <entry name="$MAVEN_REPOSITORY$/org/spigotmc/plugin-annotations/1.2.3-SNAPSHOT/plugin-annotations-1.2.3-SNAPSHOT.jar" />
           <entry name="$MAVEN_REPOSITORY$/org/bukkit/bukkit/1.13-R0.1-SNAPSHOT/bukkit-1.13-R0.1-SNAPSHOT.jar" />
           <entry name="$MAVEN_REPOSITORY$/commons-lang/commons-lang/2.6/commons-lang-2.6.jar" />

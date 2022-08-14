@@ -30,11 +30,11 @@ dependencies {
     //Shade
     implementation("org.bstats:bstats-bukkit:3.0.0")
     //compileOnly("org.jetbrains:annotations:22.0.0")
-    compileOnly("org.spigotmc:spigot:1.18.2-R0.1-SNAPSHOT")
-    compileOnly("org.spigotmc:minecraft-server:1.18.2-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:spigot:1.19.2-R0.1-SNAPSHOT")
+    compileOnly("org.spigotmc:minecraft-server:1.19.2-R0.1-SNAPSHOT")
     //Annotations
-    compileOnly("org.projectlombok:lombok:1.18.22")
-    annotationProcessor("org.projectlombok:lombok:1.18.22")
+    compileOnly("org.projectlombok:lombok:1.18.24")
+    annotationProcessor("org.projectlombok:lombok:1.18.24")
     compileOnly("org.spigotmc:plugin-annotations:1.2.3-SNAPSHOT")
     annotationProcessor("org.spigotmc:plugin-annotations:1.2.3-SNAPSHOT")
 }
@@ -51,8 +51,8 @@ tasks.jar {
 tasks.shadowJar {
     dependsOn("jar")
     archiveClassifier.set("")
-   // destinationDirectory.set(file("D:/Noa/Minecraft/Servers/@Test_Server/plugins/")) //"$rootDir/jars/"
-    destinationDirectory.set(file("C:/Users/erika/OneDrive/Työpöytä/Noa/Noa/mc/plugins/")) //"$rootDir/jars/"
+    destinationDirectory.set(file("D:/Noa/Minecraft/Servers/@Test_Server/plugins/")) //"$rootDir/jars/"
+    //destinationDirectory.set(file("C:/Users/erika/OneDrive/Työpöytä/Noa/Noa/mc/plugins/")) //"$rootDir/jars/"
     relocate("org.bstats", "sh.zoltus.apis.bstats")
     minimize()
 }
