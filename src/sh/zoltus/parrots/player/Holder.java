@@ -1,9 +1,8 @@
 package sh.zoltus.parrots.player;
 
 import lombok.SneakyThrows;
-import net.minecraft.server.level.EntityPlayer;
+import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
-import org.bukkit.craftbukkit.v1_19_R1.entity.CraftPlayer;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Parrot;
@@ -11,7 +10,6 @@ import org.bukkit.entity.Player;
 import org.bukkit.persistence.PersistentDataType;
 import sh.zoltus.parrots.Parrots;
 
-import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -32,7 +30,7 @@ removing parrot:
 public record Holder(Player player) {
 
     private static final Map<UUID, Holder> holders = new HashMap<>();
-    private static final NamespacedKey fakeParrotKey = Parrots.getFakeParrotKey();
+    private static final NamespacedKey fakeParrotKey = Parrots.getParrotKey();
 
     public Holder(Player player) {
         this.player = player;
@@ -50,7 +48,6 @@ public record Holder(Player player) {
         player.setShoulderEntityRight(null);
         player.setShoulderEntityLeft(left);
         player.setShoulderEntityRight(right);
-       // lockEmptyShoulders(true); //Needs relock when fly toggle
         player.sendMessage("refreshed");
     }
 
@@ -66,57 +63,45 @@ public record Holder(Player player) {
                 }
             }
         }
-        /*
-        if (hasFakeParrots()) {
-            //lockEmptyShoulders(true);
-        } else if (!hasParrots()) {
-            Bukkit.broadcastMessage("FALSE");
-            //lockEmptyShoulders(false);
-           // setGlue(false);
-        }*/
     }
 
-    @SneakyThrows //todo remove method , can be done other way, without reflection
+    @SneakyThrows
+    //This could be done with nms but ill save my brain
+    //Basicly fakes falling so normal parrots get removed
+    //todo improve, possibly nms removeparrot method.
     private void dropRealParrots() {
-        //todo remove reflection
-        CraftPlayer cp = (CraftPlayer) player;
-        EntityPlayer ep = cp.getHandle();
-        //todo check if shoulder side check is needed
-        if (hasParrots() && !hasFakeParrots()) {
-            //todo shouldnt work if lock is on
-            Method method = ep.getClass().getSuperclass().getDeclaredMethod("fP"); //Drops both parrots
-            //fe == 1.18.2, fD == 1.18, 1.19 = fP & 1.19.2
-            method.setAccessible(true);
-            method.invoke(ep);
-            //lockEmptyShoulders(false); //this resets shoulders, useless here probably
-        }
+        Location loc = player.getLocation();
+        loc.add(0, 1, 0);
+        player.teleport(loc);
+        player.setFallDistance(0.501F);
+        loc.add(0, -1, 0);
+        player.teleport(loc);
     }
 
     @SneakyThrows
     public void setParrot(Shoulder shoulder, Parrot.Variant color) {
-        dropRealParrots();
-        Parrot parrot = (Parrot) player.getWorld().spawnEntity(player.getLocation(), EntityType.PARROT);
-
-        //todo remove static access
-        parrot.setSilent(Parrots.getYml().getBoolean("Config.isSilent"));
-        parrot.getPersistentDataContainer().set(fakeParrotKey, PersistentDataType.BYTE, (byte) 0);
-        parrot.setVariant(color);
-        parrot.setSitting(true);
-        parrot.setOwner(player);
-        parrot.setTamed(true);
-        parrot.setAI(false);
-        //todo? wasnt orginally here, does this affect relog?
-        //parrot.remove();
-        switch (shoulder) {
-            case LEFT -> player.setShoulderEntityLeft(parrot);
-            case RIGHT -> player.setShoulderEntityRight(parrot);
-            case BOTH -> {
-                player.setShoulderEntityRight(parrot);
-                player.setShoulderEntityLeft(parrot);
+        if (!player.isOnGround()) {
+            player.sendMessage("parrot can only be set when on ground");
+        } else {
+            dropRealParrots();
+            Parrot parrot = (Parrot) player.getWorld().spawnEntity(player.getLocation(), EntityType.PARROT);
+            //todo remove static access
+            parrot.setSilent(Parrots.getYml().getBoolean("Config.isSilent"));
+            parrot.getPersistentDataContainer().set(fakeParrotKey, PersistentDataType.BYTE, (byte) 0);
+            parrot.setVariant(color);
+            parrot.setSitting(true);
+            parrot.setOwner(player);
+            parrot.setTamed(true);
+            parrot.setAI(false);
+            switch (shoulder) {
+                case LEFT -> player.setShoulderEntityLeft(parrot);
+                case RIGHT -> player.setShoulderEntityRight(parrot);
+                case BOTH -> { //Has separate entitys so incase of a bug console wont spam duplicate uuid's
+                    setParrot(Shoulder.LEFT, color);
+                    setParrot(Shoulder.RIGHT, color);
+                }
             }
         }
-      //  setGlue(true);
-      //  lockEmptyShoulders(true);
     }
 
     private boolean hasParrots() {
@@ -144,58 +129,4 @@ public record Holder(Player player) {
         LEFT, RIGHT, BOTH
     }
 }
-
-
-
-        /* // remove parrots, and if empty unlockshoulders and remove glue
-    //i left, j right, h autodecide? shoulderentity //with craftEntity.save
-    //if i remember right adding tag to player shoulders fakes that it has parrot
-    //so real parrots cant fly to it
-    // Not needed
-    public void lockEmptyShoulders(boolean lock) {
-
-
-        CraftPlayer cp = (CraftPlayer) player;
-        EntityPlayer ep = cp.getHandle();
-        NBTTagCompound tag = new NBTTagCompound();
-
-        //br right, bq left
-        //EntityDataAccessor == datawatcher
-        //todo check reflections old ones are 1.18.2// protected final SynchedEntityData entityData;
-        if (lock) { // setShoulderEntityLeft(new CompoundTag());  = empty tag remove parrot
-            //Creates tag?
-            //puts tag to combound map
-            tag.a("lock", "lock");
-        }
-        if (player.getShoulderEntityLeft() == null) {
-            ep.i(tag); //Se setShoulderEntityLeft(CompoundTag nbttagcompound) {
-            //  this.entityData.set(DATA_SHOULDER_LEFT, nbttagcompound);
-            if (lock)
-                player.sendMessage("lockedLEft");
-        }
-        if (player.getShoulderEntityRight() == null) {
-            ep.j(tag);
-            if (lock)
-                player.sendMessage("lockedright");
-        }
-
-    }*/
-
-/**
- * glue for parrots. if true it sets gluetimer to max longvalue, else false and parrots will drop on jump ect
- */
-    /*@SneakyThrows
-    public void setGlue(boolean glue) {
-        CraftPlayer cp = (CraftPlayer) player;
-        EntityPlayer ep = cp.getHandle();
-        long time = glue ? 9999 : 0;
-        //timeEntitySatOnShoulder
-
-        Field f = ep.getClass().getSuperclass().getDeclaredField("co"); //f == 1.18, co == 1.19 && 1.19.2,
-        f.setAccessible(true);
-        Bukkit.broadcastMessage("time" + f.get(ep));
-        f.set(ep, time);
-        Bukkit.broadcastMessage("time" + f.get(ep));
-        player.sendMessage("glued");
-    }*/
 

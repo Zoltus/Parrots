@@ -4,29 +4,22 @@ import dev.jorel.commandapi.CommandAPI;
 import dev.jorel.commandapi.CommandAPIConfig;
 import jdk.jfr.Description;
 import lombok.Getter;
-import net.minecraft.nbt.NBTTagCompound;
-import net.minecraft.network.syncher.DataWatcherObject;
-import net.minecraft.server.level.EntityPlayer;
-import net.minecraft.world.entity.player.EntityHuman;
 import org.bstats.bukkit.Metrics;
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
 import org.bukkit.NamespacedKey;
 import org.bukkit.entity.Parrot;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.CreatureSpawnEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.metadata.MetadataStoreBase;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.plugin.java.annotation.plugin.ApiVersion;
 import org.bukkit.plugin.java.annotation.plugin.LogPrefix;
 import org.bukkit.plugin.java.annotation.plugin.Plugin;
 import org.bukkit.plugin.java.annotation.plugin.Website;
 import org.bukkit.plugin.java.annotation.plugin.author.Author;
-import org.spigotmc.event.entity.EntityMountEvent;
 import sh.zoltus.parrots.configuration.OneYml;
 import sh.zoltus.parrots.events.ParrotLeaveEvent;
 import sh.zoltus.parrots.events.ParrotLeaveListener;
@@ -53,7 +46,7 @@ public class Parrots extends JavaPlugin implements Listener {
     @Getter
     private static Parrots plugin;
     @Getter
-    private static NamespacedKey fakeParrotKey;
+    private static NamespacedKey parrotKey;
     @Getter
     private static OneYml yml;
 
@@ -69,7 +62,7 @@ public class Parrots extends JavaPlugin implements Listener {
         yml = new OneYml("config.yml", this.getDataFolder());
         new ParrotsCMDApi().register(); //registers parrots cmd
         //todo change key to fakeparrot
-        fakeParrotKey = new NamespacedKey(this, "fake");
+        parrotKey = new NamespacedKey(this, "fakeparrot");
         getServer().getPluginManager().registerEvents(this, this);
         getServer().getPluginManager().registerEvents(new ParrotLeaveListener(), this);
         getServer().getPluginManager().registerEvents(new GuiHandler(), this);
@@ -83,25 +76,11 @@ public class Parrots extends JavaPlugin implements Listener {
         });
     }
 
-    // todo just incase check if its custom and it cancels it
     @EventHandler
     public void move(CreatureSpawnEvent e) {
         if (e.getEntity() instanceof Parrot parrot && e.getSpawnReason() == CreatureSpawnEvent.SpawnReason.SHOULDER_ENTITY) {
             if (!Holder.isRealParrot(parrot)) {
-                Bukkit.broadcastMessage("cancelled");
                 e.setCancelled(true);
-            }
-        }
-    }
-
-    @EventHandler
-    public void move(EntityDeathEvent e) {
-
-        if (e.getEntity() instanceof Parrot parrot) {
-            Bukkit.broadcastMessage("called");
-            if (!Holder.isRealParrot(parrot)) {
-                Bukkit.broadcastMessage("cancelled");
-
             }
         }
     }
@@ -116,36 +95,15 @@ public class Parrots extends JavaPlugin implements Listener {
     }
 
     @EventHandler
-    public void parrotLeaveEvent(EntityMountEvent e) {
-        Bukkit.broadcastMessage("mount");
-    }
-
-    @EventHandler
-    public void parrotTest(PlayerJoinEvent e) {
-        Player p = e.getPlayer();
-        Holder holder = Holder.of(p);
-        if (holder.hasFakeParrots()) {
-            holder.lockEmptyShoulders(true);
-        }
-    }
-
-
-    @EventHandler
     public void onChatt(PlayerCommandPreprocessEvent e) {
         Player p = e.getPlayer();
         String msg = e.getMessage();
         List<String> argsList = new ArrayList<>(Arrays.asList(msg.split(" ")));
         String cmd = argsList.get(0);
         argsList.remove(0);
-        // String[] args = argsList.toArray(new String[0]);
-
         Holder holder = Holder.of(p);
-
         if (cmd.startsWith("//")) {
             e.setCancelled(true);
-          //  CraftPlayer cp = (CraftPlayer) player;
-            //EntityPlayer ep = cp.getHandle();
-
             switch (cmd.toLowerCase()) {
                 case "//ml" -> {
                     holder.setParrot(Holder.Shoulder.LEFT, Parrot.Variant.BLUE);
@@ -175,308 +133,21 @@ public class Parrots extends JavaPlugin implements Listener {
                 case "//clearb" -> {
                     holder.removeParrot(Holder.Shoulder.BOTH);
                     p.sendMessage("removedb");
+                    p.sleep(p.getLocation(), true);
                 }
-                case "//tt1" -> {
-
-                    p.sendMessage("removedb");
-                }
-
-                /*
-                case "//settime" -> {
-                    try {
-                        long time = Long.parseLong(args[0]);
-                        //timeEntitySatOnShoulder
-                        Field f = ep.getClass().getSuperclass().getDeclaredField("f");
-                        f.setAccessible(true);
-                        f.set(ep, time);
-                        player.sendMessage("changed time");
-                    } catch (Exception exception) {
-                        exception.printStackTrace();
-                    }
-                }
-                case "//resetmounttime" -> {
-                    try {
-                        long time = player.getWorld().getGameTime() + 20;
-                        //timeEntitySatOnShoulder
-                        Field f = ep.getClass().getSuperclass().getDeclaredField("f");
-                        f.setAccessible(true);
-                        f.set(ep, time);
-                        player.sendMessage("changed time");
-                    } catch (Exception exception) {
-                        exception.printStackTrace();
-                    }
-                }
-                case "//gametime" -> player.sendMessage("time: " + player.getWorld().getGameTime());
-                case "//shoulders" -> {
-                    player.sendMessage("left: " + player.getShoulderEntityLeft());
-                    player.sendMessage("right: " + player.getShoulderEntityRight());
-                }
-                case "//mounttime" -> {//
-                    try {
-                        Field f = ep.getClass().getSuperclass().getDeclaredField("f");
-                        f.setAccessible(true);
-                        long time = f.getLong(ep);
-                        player.sendMessage("munttime: " + time);
-                    } catch (Exception exception) {
-                        exception.printStackTrace();
-                    }
-                }
-                case "//parrotlock" -> {
-                    player.sendMessage("lock");
-                    NBTTagCompound tag = new NBTTagCompound();
-                    tag.a("a", "a");
-                    //i left, j right, h autdecide shoulderentity //with craftEntity.save
-                    ep.j(tag);
-                    ep.i(tag);
-                }
-                case "//parrotunlock" -> {
-                    player.sendMessage("unlock");
-                    NBTTagCompound tag = new NBTTagCompound();
-                    //i left, j right, h autdecide shoulderentity //with craftEntity.save
-                    ep.j(tag);
-                    ep.i(tag);
-                }
-                case "//refresh2" -> {
-                    Entity left = player.getShoulderEntityLeft();
-                    Entity right = player.getShoulderEntityRight();
-
-                    player.setShoulderEntityLeft(null);
-                    player.setShoulderEntityRight(null);
-                    player.setShoulderEntityLeft(left);
-                    player.setShoulderEntityRight(right);
-                    player.sendMessage("refreshed");
-                }*/
-
-                /*
-                 1. aiTick checks if (!isPassenger() && this.onGround && !isInWater() && !this.isInPowderSnow)
-                 2. if player. this.entityData.get(DATA_SHOULDER_LEFT) is empty it can mount
-                 3. parrot mounts if it doesnt have cooldown and 1 of shoulders is empty
-
-
-                 */
-                // todo cant mount on water ect, reflection mount
-                // public boolean setEntityOnShoulder(CompoundTag nbttagcompound) {
-                // if (!isPassenger() && this.onGround && !isInWater() && !this.isInPowderSnow) {
-                //if this.entityData.get(DATA_SHOULDER_LEFT) is empty it can mount
-
-                //   public <T> T get(EntityDataAccessor<T> datawatcherobject) {
-                //    return getItem(datawatcherobject).getValue();
-                //  }
-                //private <T> DataItem<T> getItem(EntityDataAccessor<T> datawatcherobject) {
-                //     return (DataItem<T>)this.itemsById.get(datawatcherobject.getId());
-                // }
-                //nbttagcoumpound isEmpty
-
-
-                //fake SynchedEntityData to isempty false, so other parrots cant mount
-                // this.entityData.define(DATA_SHOULDER_LEFT, new CompoundTag());
-                //    this.entityData.define(DATA_SHOULDER_RIGHT, new CompoundTag())
-                //
-                // public CompoundTag getShoulderEntityLeft() {
-                //   return (CompoundTag)this.entityData.get(DATA_SHOULDER_LEFT);
-                // }
-                //
-                // public void setShoulderEntityLeft(CompoundTag nbttagcompound) {
-                //   this.entityData.set(DATA_SHOULDER_LEFT, nbttagcompound);
-                // }
-                //
-
-
-            }
-        }
-    }
-    /*
-    @EventHandler
-    public void parrotTest(CreatureSpawnEvent e) {
-        CreatureSpawnEvent.SpawnReason spawnReason = e.getSpawnReason();
-        if (spawnReason == CreatureSpawnEvent.SpawnReason.SHOULDER_ENTITY) {
-            if (e.getEntity() instanceof Parrot parrot) {
-                String customName = parrot.getCustomName();
-                if (customName != null && customName.equals("%PARROTS%")) {
-                    e.setCancelled(true);
+                case "//dropparrots" -> {
+                    p.sendMessage("dropparrots");
+                    Location loc = p.getLocation();
+                    loc.add(0, 1, 0);
+                    p.teleport(loc);
+                    p.setFallDistance(0.501F);
+                    loc.add(0, -1, 0);
+                    p.teleport(loc);
                 }
             }
         }
     }
 
-    @EventHandler
-    public void parrotTest(EntityDamageEvent e) {;
-        if (e.getEntity() instanceof Player player) {
-            Holder holder = Holder.of(player);
-            if (holder.hasParrots()) {
-                holder.refreshShoulders();
-            }
-        }
-    }*/
-
-    /*
-     * Creates parrot with custom datacontainer byte to mark that parrot is custom.
-     * Removes ai and makes parrot sit incase bugs happen so parrots wont escape.
-     *
-     * @param player     layer
-     * @param color of the parrot
-     * @return Parrot
-     */
-
-    /*
-     parrots are atleast 20ticks on shoulder when they entered
-     100 tick sit cooldown on shoulder
-
-     public Entity getShoulderEntityLeft() {
-     if (!getHandle().fG().f()) {
-     Optional<Entity> shoulder = EntityTypes.a(getHandle().fG(), (getHandle()).t);
-     return !shoulder.isPresent() ? null : ((Entity)shoulder.get()).getBukkitEntity();
-     }
-     return null;
-     }
-
-     public void setShoulderEntityLeft(Entity entity) {
-     getHandle().i((entity == null) ? new NBTTagCompound() : ((CraftEntity)entity).save());
-     if (entity != null)
-     entity.remove();
-     }
-
-     public Entity getShoulderEntityRight() {
-     if (!getHandle().fH().f()) {
-     Optional<Entity> shoulder = EntityTypes.a(getHandle().fH(), (getHandle()).t);
-     return !shoulder.isPresent() ? null : ((Entity)shoulder.get()).getBukkitEntity();
-     }
-     return null;
-     }
-
-     public void setShoulderEntityRight(Entity entity) {
-     getHandle().j((entity == null) ? new NBTTagCompound() : ((CraftEntity)entity).save());
-     if (entity != null)
-     entity.remove();
-     }
 
 
-
-
-     public <T> void b(DataWatcherObject<T> datawatcherobject, T t0) {
-     DataWatcher.Item<T> datawatcher_item = this.b(datawatcherobject);
-     if (ObjectUtils.notEqual(t0, datawatcher_item.b())) {
-     datawatcher_item.a(t0);
-     this.e.a(datawatcherobject);
-     datawatcher_item.a(true);
-     this.i = true;
-     }
-
-     }
-
-     playerjava
-     if (nbttagcompound.contains("ShoulderEntityLeft", 10)) {
-     setShoulderEntityLeft(nbttagcompound.getCompound("ShoulderEntityLeft"));
-     }
-
-     if (nbttagcompound.contains("ShoulderEntityRight", 10)) {
-     setShoulderEntityRight(nbttagcompound.getCompound("ShoulderEntityRight"));
-     }
-
-
-     public void setShoulderEntityLeft(CompoundTag nbttagcompound) {
-     this.entityData.set(DATA_SHOULDER_LEFT, nbttagcompound);
-     }
-
-
-     public boolean setEntityOnShoulder(CompoundTag nbttagcompound) {
-     if (!isPassenger() && this.onGround && !isInWater() && !this.isInPowderSnow) {
-     if (getShoulderEntityLeft().isEmpty()) {
-     setShoulderEntityLeft(nbttagcompound);
-     this.timeEntitySatOnShoulder = this.level.getGameTime();
-     return true;
-     }  if (getShoulderEntityRight().isEmpty()) {
-     setShoulderEntityRight(nbttagcompound);
-     this.timeEntitySatOnShoulder = this.level.getGameTime();
-     return true;
-     }
-     return false;
-     }
-
-     return false;
-     }
-     protected void removeEntitiesOnShoulder() {
-     if (this.timeEntitySatOnShoulder + 20L < this.level.getGameTime()) {
-
-     if (spawnEntityFromShoulder(getShoulderEntityLeft())) {
-     setShoulderEntityLeft(new CompoundTag());
-     }
-     if (spawnEntityFromShoulder(getShoulderEntityRight())) {
-     setShoulderEntityRight(new CompoundTag());
-     }
-     }
-     }
-
-
-
-     private boolean spawnEntityFromShoulder(CompoundTag nbttagcompound) {
-     if (!this.level.isClientSide && !nbttagcompound.isEmpty()) {
-     return ((Boolean)EntityType.create(nbttagcompound, this.level).map(entity -> {
-     if (entity instanceof TamableAnimal) {
-     ((TamableAnimal)entity).setOwnerUUID(this.uuid);
-     }
-
-     entity.setPos(getX(), getY() + 0.699999988079071D, getZ());
-     return Boolean.valueOf(((ServerLevel)this.level).addWithUUID(entity, CreatureSpawnEvent.SpawnReason.SHOULDER_ENTITY));
-     }).orElse(Boolean.valueOf(true))).booleanValue();
-     }
-
-     return true;
-     }
-
-     protected static final EntityDataAccessor<CompoundTag> DATA_SHOULDER_LEFT = SynchedEntityData.defineId(Player.class, EntityDataSerializers.COMPOUND_TAG);
-     protected static final EntityDataAccessor<CompoundTag> DATA_SHOULDER_RIGHT = SynchedEntityData.defineId(Player.class, EntityDataSerializers.COMPOUND_TAG);
-     private long timeEntitySatOnShoulder;
-
-     protected void defineSynchedData() {
-     super.defineSynchedData();
-     this.entityData.define(DATA_PLAYER_ABSORPTION_ID, Float.valueOf(0.0F));
-     this.entityData.define(DATA_SCORE_ID, Integer.valueOf(0));
-     this.entityData.define(DATA_PLAYER_MODE_CUSTOMISATION, Byte.valueOf((byte)0));
-     this.entityData.define(DATA_PLAYER_MAIN_HAND, Byte.valueOf((byte)1));
-     this.entityData.define(DATA_SHOULDER_LEFT, new CompoundTag());
-     this.entityData.define(DATA_SHOULDER_RIGHT, new CompoundTag());
-     }
-
-     step
-     playShoulderEntityAmbientSound(getShoulderEntityLeft());
-     playShoulderEntityAmbientSound(getShoulderEntityRight());
-     //boom
-     if ((!this.level.isClientSide && (this.fallDistance > 0.5F || isInWater())) || this.abilities.flying || isSleeping() || this.isInPowderSnow) {
-     removeEntitiesOnShoulder();
-     }
-
-
-     private void playShoulderEntityAmbientSound(@Nullable CompoundTag nbttagcompound) {
-     if (nbttagcompound != null && (!nbttagcompound.contains("Silent") || !nbttagcompound.getBoolean("Silent")) && this.level.random.nextInt(200) == 0) {
-     String s = nbttagcompound.getString("id");
-
-     EntityType.byString(s).filter(entitytypes -> (entitytypes == EntityType.PARROT))
-
-     .ifPresent(entitytypes -> {
-     if (!Parrot.imitateNearbyMobs(this.level, (Entity)this)) {
-     this.level.playSound(null, getX(), getY(), getZ(), Parrot.getAmbient(this.level, this.level.random), getSoundSource(), 1.0F, Parrot.getPitch(this.level.random));
-     }
-     });
-     }
-     }
-
-     public void startAutoSpinAttack(int i) {
-     this.autoSpinAttackTicks = i;
-     if (!this.level.isClientSide) {
-     removeEntitiesOnShoulder();
-     setLivingEntityFlag(4, true);
-     }
-     }
-
-     on damage removeEntitiesOnShoulder
-
-
-     private final ShoulderRidingEntity entity;
-     this.entity.setEntityOnShoulder(this.owner);
-     private ServerPlayer owner;
-
-
-     {AbsorptionAmount:0.0f,Age:0,AgeLocked:0b,Air:300s,ArmorDropChances:[0.085f,0.085f,0.085f,0.085f],ArmorItems:[{},{},{},{}],Attributes:[{Base:6.0d,Name:"minecraft:generic.max_health"},{Base:16.0d,Modifiers:[{Amount:0.022699729516014625d,Name:"Random spawn bonus",Operation:1,UUID:[I;134221125,251809616,-1115463660,1392643272]}],Name:"minecraft:generic.follow_range"}],Brain:{memories:{}},Bukkit.Aware:1b,Bukkit.updateLevel:2,CanPickUpLoot:0b,DeathTime:0s,FallDistance:0.0f,FallFlying:0b,Fire:-1s,ForcedAge:0,HandDropChances:[0.085f,0.085f],HandItems:[{},{}],Health:6.0f,HurtByTimestamp:0,HurtTime:0s,InLove:0,Invulnerable:0b,LeftHanded:0b,Motion:[0.0d,0.0d,0.0d],OnGround:0b,Owner:[I;529187973,1944471018,-1532636126,-2014973603],Paper.Origin:[-47.583991373246285d,63.0d,-9.214380896530914d],Paper.OriginWorld:[I;2142263796,-2086845947,-1705589142,-784772837],Paper.SpawnReason:"CUSTOM",PersistenceRequired:1b,PortalCooldown:0,Pos:[-47.583991373246285d,63.0d,-9.214380896530914d],Purpur.ShouldBurnInDay:0b,Purpur.ticksSinceLastInteraction:0,Rotation:[111.51586f,19.101288f],Silent:1b,Sitting:1b,Spigot.ticksLived:0,UUID:[I;-1483941076,-548387880,-1497422390,480439213],Variant:1,WorldUUIDLeast:-7325449581792505573L,WorldUUIDMost:9200952945432936965L,id:"minecraft:parrot"}
-     */
 }
