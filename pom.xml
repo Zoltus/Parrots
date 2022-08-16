@@ -1,0 +1,181 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>sh.zoltus</groupId>
+    <artifactId>Parrots</artifactId>
+    <version>1.0-SNAPSHOT</version>
+
+    <properties>
+        <outputDir>D:\Noa\Minecraft\Servers\@Test_Server\plugins</outputDir>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.target>17</maven.compiler.target>
+        <!-- Removes warnings -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <!-- Api's -->
+        <spigotAPI.version>1.19.1-R0.1-SNAPSHOT</spigotAPI.version>
+        <spigot.server.version>1.19.1-R0.1-SNAPSHOT</spigot.server.version>
+        <spigot.annotations.version>1.2.3-SNAPSHOT</spigot.annotations.version>
+        <lombok.version>1.18.22</lombok.version>
+        <lombok.version>1.18.24</lombok.version>
+        <bstats.version>3.0.0</bstats.version>
+        <commandapi.version>8.5.1</commandapi.version>
+        <!-- Maven -->
+        <maven.compiler.versions>17</maven.compiler.versions>
+        <maven-jar-plugin.version>3.2.0</maven-jar-plugin.version>
+        <maven-compiler-plugin.version>3.10.1</maven-compiler-plugin.version>
+        <maven-shade-plugin.version>3.3.1-SNAPSHOT</maven-shade-plugin.version>
+    </properties>
+
+    <!-- Reposities -->
+    <repositories>
+        <repository>
+            <id>org.apache.maven.plugins</id>
+            <url>https://mvnrepository.com/artifact/org.apache.maven.plugins/maven-compiler-plugin</url>
+        </repository>
+        <!-- SpigotAPI Repo -->
+        <repository>
+            <id>spigotmc-repo</id>
+            <url>https://hub.spigotmc.org/nexus/content/repositories/snapshots</url>
+        </repository>
+        <!-- McLibs -->
+        <repository>
+            <id>minecraft-libraries</id>
+            <name>Minecraft Libraries</name>
+            <url>https://libraries.minecraft.net</url>
+        </repository>
+    </repositories>
+    <!-- Dependencies -->
+    <dependencies>
+        <!--Spigot APIS -->
+        <dependency>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot-api</artifactId>
+            <version>${spigotAPI.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- Spigot, has some dependencies, log4 ect-->
+        <dependency>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>spigot</artifactId>
+            <version>${spigotAPI.version}</version>
+            <scope>provided</scope>
+            <exclusions>
+                <exclusion>
+                    <artifactId>commons-codec</artifactId>
+                    <groupId>commons-codec</groupId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.spigotmc</groupId>
+            <artifactId>plugin-annotations</artifactId>
+            <version>${spigot.annotations.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!--Lombok -->
+        <dependency>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <version>${lombok.version}</version>
+            <scope>provided</scope>
+        </dependency>
+        <!-- CommandApi -->
+        <dependency>
+            <groupId>dev.jorel</groupId>
+            <artifactId>commandapi-shade</artifactId>
+            <version>${commandapi.version}</version>
+        </dependency>
+        <!-- bstats -->
+        <dependency>
+            <groupId>org.bstats</groupId>
+            <artifactId>bstats-bukkit</artifactId>
+            <version>${bstats.version}</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>${project.name}</finalName>
+        <sourceDirectory>src</sourceDirectory>
+        <resources>
+            <resource>
+                <directory>resources</directory>
+            </resource>
+        </resources>
+        <plugins>
+            <!-- Jar loc -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>${maven-jar-plugin.version}</version>
+                <configuration>
+                    <outputDirectory>${outputDir}</outputDirectory>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <version>3.8.1</version>
+                <configuration>
+                    <release>${maven.compiler.versions}</release>
+                    <compilerArgument>-XDignore.symbol.file</compilerArgument>
+                    <encoding>UTF-8</encoding>
+                    <!-- Add the processor path for the plugin -->
+                    <annotationProcessorPaths>
+                        <path>
+                            <!-- SpigotAnnotations -->
+                            <groupId>org.spigotmc</groupId>
+                            <artifactId>plugin-annotations</artifactId>
+                            <version>${spigot.annotations.version}</version>
+                        </path>
+                        <path>
+                            <!-- Lombok Processing -->
+                            <groupId>org.projectlombok</groupId>
+                            <artifactId>lombok</artifactId>
+                            <version>${lombok.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
+            <!-- For Shading -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-shade-plugin</artifactId>
+                <version>${maven-shade-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>shade</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>shade</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <minimizeJar>true</minimizeJar>
+                    <createDependencyReducedPom>true</createDependencyReducedPom>
+                    <filters>
+                        <filter>
+                            <artifact>*:*</artifact>
+                            <excludes>
+                                <exclude>META-INF/*.MF</exclude>
+                            </excludes>
+                        </filter>
+                    </filters>
+                    <relocations>
+                        <relocation>
+                            <pattern>org.bstats</pattern>
+                            <shadedPattern>sh.zoltus.apis.bstats</shadedPattern>
+                        </relocation>
+                        <relocation>
+                            <pattern>dev.jorel</pattern>
+                            <shadedPattern>sh.zoltus.apis.dev.jorel</shadedPattern>
+                        </relocation>
+                    </relocations>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

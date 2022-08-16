@@ -1,5 +1,8 @@
 Config:
   isSilent: true
+  aliases:
+    # - alias1
+    # - alias2
 Messages:
   GuiName: §5Parrot Menu!
   ParrotSelected: §c§5[§bParrots§5] §dParrot Selected!
