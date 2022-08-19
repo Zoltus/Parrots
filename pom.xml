@@ -10,8 +10,6 @@
 
     <properties>
         <outputDir>D:\Noa\Minecraft\Servers\@Test_Server\plugins</outputDir>
-        <maven.compiler.source>17</maven.compiler.source>
-        <maven.compiler.target>17</maven.compiler.target>
         <!-- Removes warnings -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <!-- Api's -->
@@ -23,7 +21,7 @@
         <bstats.version>3.0.0</bstats.version>
         <commandapi.version>8.5.1</commandapi.version>
         <!-- Maven -->
-        <maven.compiler.versions>17</maven.compiler.versions>
+        <java.version>8</java.version>
         <maven-jar-plugin.version>3.2.0</maven-jar-plugin.version>
         <maven-compiler-plugin.version>3.10.1</maven-compiler-plugin.version>
         <maven-shade-plugin.version>3.3.1-SNAPSHOT</maven-shade-plugin.version>
@@ -82,12 +80,6 @@
             <version>${lombok.version}</version>
             <scope>provided</scope>
         </dependency>
-        <!-- CommandApi -->
-        <dependency>
-            <groupId>dev.jorel</groupId>
-            <artifactId>commandapi-shade</artifactId>
-            <version>${commandapi.version}</version>
-        </dependency>
         <!-- bstats -->
         <dependency>
             <groupId>org.bstats</groupId>
@@ -119,10 +111,10 @@
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.8.1</version>
                 <configuration>
-                    <release>${maven.compiler.versions}</release>
-                    <compilerArgument>-XDignore.symbol.file</compilerArgument>
-                    <encoding>UTF-8</encoding>
-                    <!-- Add the processor path for the plugin -->
+                    <!-- <release>${java.version}</release> java 1.9+-->
+                     <compilerArgument>-XDignore.symbol.file</compilerArgument>
+                     <encoding>UTF-8</encoding>
+                     <!-- Add the processor path for the plugin -->
                     <annotationProcessorPaths>
                         <path>
                             <!-- SpigotAnnotations -->
@@ -137,6 +129,8 @@
                             <version>${lombok.version}</version>
                         </path>
                     </annotationProcessorPaths>
+                    <source>${java.version}</source>
+                    <target>${java.version}</target>
                 </configuration>
             </plugin>
             <!-- For Shading -->

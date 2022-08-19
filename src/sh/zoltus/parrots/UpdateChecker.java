@@ -1,7 +1,6 @@
 package sh.zoltus.parrots;
 
 import org.bukkit.Bukkit;
-import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -9,7 +8,16 @@ import java.net.URL;
 import java.util.Scanner;
 import java.util.function.Consumer;
 
-public record UpdateChecker(JavaPlugin plugin, int resourceId) {
+public class UpdateChecker {
+
+    private final Parrots plugin;
+    private final int resourceId;
+
+    public UpdateChecker(Parrots plugin, int resourceId) {
+        this.plugin = plugin;
+        this.resourceId = resourceId;
+    }
+
     public void getVersion(final Consumer<String> consumer) {
         Bukkit.getScheduler().runTaskAsynchronously(this.plugin, () -> {
             try (InputStream inputStream = new URL("https://api.spigotmc.org/legacy/update.php?resource=" + this.resourceId).openStream(); Scanner scanner = new Scanner(inputStream)) {

@@ -17,7 +17,8 @@ public class GuiHandler implements Listener {
     public void click(InventoryClickEvent e) {
         Inventory clickedInv = e.getClickedInventory();
         Bukkit.broadcastMessage("111");
-        if (e.getWhoClicked() instanceof Player p) {
+        if (e.getWhoClicked() instanceof Player) {
+            Player p = (Player) e.getWhoClicked();
             Bukkit.broadcastMessage("asd22");
             ParrotGui inv = ParrotGui.get(p);
             if (inv != null && inv.getInventory().equals(clickedInv)) {

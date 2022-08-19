@@ -1,15 +1,19 @@
 package sh.zoltus.parrots.player;
 
+import lombok.Getter;
 import lombok.SneakyThrows;
+import org.bukkit.Bukkit;
 import org.bukkit.Location;
-import org.bukkit.NamespacedKey;
+import org.bukkit.OfflinePlayer;
+import org.bukkit.World;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Parrot;
 import org.bukkit.entity.Player;
-import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.event.entity.CreatureSpawnEvent;
 import sh.zoltus.parrots.Parrots;
 
+import java.lang.reflect.Method;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
@@ -27,10 +31,14 @@ removing parrot:
 2. if player has even 1 parrot it only sets the other shoulder null.
 3. need to check if parrots are fakeparrots from datacontainer
  */
-public record Holder(Player player) {
+@Getter
+public class Holder {
 
+    @Getter
     private static final Map<UUID, Holder> holders = new HashMap<>();
-    private static final NamespacedKey fakeParrotKey = Parrots.getParrotKey();
+
+    private final Player player;
+    private Parrot.Variant parrotLeft, parrotRight;
 
     public Holder(Player player) {
         this.player = player;
@@ -41,88 +49,119 @@ public record Holder(Player player) {
         return holders.getOrDefault(p.getUniqueId(), new Holder(p));
     }
 
+    //Prevents clientside bug where parrots become invisible if players toggles fly and back
     public void refreshShoulders() {
         Entity left = player.getShoulderEntityLeft();
         Entity right = player.getShoulderEntityRight();
-        player.setShoulderEntityLeft(null);
-        player.setShoulderEntityRight(null);
-        player.setShoulderEntityLeft(left);
-        player.setShoulderEntityRight(right);
+        if (isFakeParrot(left)) {
+            player.setShoulderEntityLeft(null);
+            player.setShoulderEntityLeft(left);
+        }
+        if (isFakeParrot(right)) {
+            player.setShoulderEntityRight(null);
+            player.setShoulderEntityRight(right);
+        }
         player.sendMessage("refreshed");
     }
 
-    public void removeParrot(Shoulder shoulder) {
-        //todo check if is fakeparrot
-        if (hasFakeParrots()) {
-            switch (shoulder) {
-                case LEFT -> player.setShoulderEntityLeft(null);
-                case RIGHT -> player.setShoulderEntityRight(null);
-                case BOTH -> {
-                    player.setShoulderEntityLeft(null);
-                    player.setShoulderEntityRight(null);
-                }
+    public boolean removeFakeParrot(Shoulder shoulder) {
+        if (shoulder == Shoulder.BOTH) {//If either shoulder had fake parrot returns true
+            boolean removeLeft = removeFakeParrot(Shoulder.LEFT);
+            boolean removeRight = removeFakeParrot(Shoulder.RIGHT);
+            return removeLeft || removeRight;
+        } else if (shoulder == Shoulder.LEFT) {
+            if (isFakeParrot(player.getShoulderEntityLeft())) {
+                player.setShoulderEntityLeft(null);
+                return true;
+            }
+        } else if (shoulder == Shoulder.RIGHT) {
+            if (isFakeParrot(player.getShoulderEntityRight())) {
+                player.setShoulderEntityRight(null);
+                return true;
             }
         }
-    }
-
-    @SneakyThrows
-    //This could be done with nms but ill save my brain
-    //Basicly fakes falling so normal parrots get removed
-    //todo improve, possibly nms removeparrot method.
-    private void dropRealParrots() {
-        Location loc = player.getLocation();
-        loc.add(0, 1, 0);
-        player.teleport(loc);
-        player.setFallDistance(0.501F);
-        loc.add(0, -1, 0);
-        player.teleport(loc);
+        return false;
     }
 
     @SneakyThrows
     public void setParrot(Shoulder shoulder, Parrot.Variant color) {
         if (!player.isOnGround()) {
             player.sendMessage("parrot can only be set when on ground");
+        } else if (shoulder == Shoulder.BOTH) { //If both calls method for both shoulders
+            setParrot(Shoulder.LEFT, color);
+            setParrot(Shoulder.RIGHT, color);
         } else {
-            dropRealParrots();
+            //Detatches current parrots
+            releaseRealParrot(shoulder);
+            //Creates new custom parrot for shoulder
             Parrot parrot = (Parrot) player.getWorld().spawnEntity(player.getLocation(), EntityType.PARROT);
+            parrot.setVariant(color);
+            parrot.setAI(false);
+            parrot.setTamed(true);
+            parrot.setOwner(player);
+            parrot.setSitting(true);
             //todo remove static access
             parrot.setSilent(Parrots.getYml().getBoolean("Config.isSilent"));
-            parrot.getPersistentDataContainer().set(fakeParrotKey, PersistentDataType.BYTE, (byte) 0);
-            parrot.setVariant(color);
-            parrot.setSitting(true);
-            parrot.setOwner(player);
-            parrot.setTamed(true);
-            parrot.setAI(false);
-            switch (shoulder) {
-                case LEFT -> player.setShoulderEntityLeft(parrot);
-                case RIGHT -> player.setShoulderEntityRight(parrot);
-                case BOTH -> { //Has separate entitys so incase of a bug console wont spam duplicate uuid's
-                    setParrot(Shoulder.LEFT, color);
-                    setParrot(Shoulder.RIGHT, color);
-                }
+            parrot.setCustomName("§cThis is a bug please notify admins.");
+            parrot.setCustomNameVisible(false);
+            if (shoulder == Shoulder.LEFT) {
+                player.setShoulderEntityLeft(parrot);
+            } else if (shoulder == Shoulder.RIGHT) {
+                player.setShoulderEntityRight(parrot);
             }
         }
     }
 
-    private boolean hasParrots() {
-        return player.getShoulderEntityRight() != null || player.getShoulderEntityLeft() != null;
-    }
+    // private static String version =
+//
+    //version 14
+    private static final String version = Bukkit.getServer().getClass().getPackage().getName().split("\\.")[3];
+    private static final int subversion = Integer.parseInt(version.split("_")[1]);
 
-    public boolean hasFakeParrots() {
-        return hasParrots() && (!isRealParrot(player.getShoulderEntityLeft()) || !isRealParrot(player.getShoulderEntityRight()));
-    }
+    @SneakyThrows //todo catch throwable
+    private void releaseRealParrot(Shoulder shoulder) {
+        Entity parrot = shoulder == Shoulder.LEFT ? player.getShoulderEntityLeft() : player.getShoulderEntityRight();
+        if (parrot != null && !isFakeParrot(parrot)) {
+            World world = player.getWorld();
+            Method getNmsWorld;
+            if (subversion > 16) {
+                getNmsWorld = world.getClass().getMethod("getHandle");
+            } else {//todo check if works with new
+                Class<?> worldServer = getNMSBukkit("CraftWorld");
+                getNmsWorld = worldServer.getMethod("getHandle");
+            }
 
-    public void removeFakeParrots() {
-        if (!isRealParrot(player.getShoulderEntityLeft())) {
-            removeParrot(Shoulder.LEFT);
+            Object nmsWorld = getNmsWorld.invoke(world);
+            Method getNmsParrot = parrot.getClass().getMethod("getHandle");
+            Object entityParrot = getNmsParrot.invoke(parrot);
+            Location loc = player.getLocation();
+            parrot.teleport(new Location(loc.getWorld(), loc.getX(), loc.getY() + 0.699999988079071D, loc.getZ()));
+
+            String addEntityMethodName = subversion > 16 ? "addWithUUID" : "addEntity";
+            Method addEntity;
+            if (subversion > 16) { //todo check if i can just use Entity.class
+                addEntity = nmsWorld.getClass().getMethod(addEntityMethodName, Class.forName("net.minecraft.world.entity.Entity"), CreatureSpawnEvent.SpawnReason.class);
+            } else {
+                addEntity = nmsWorld.getClass().getMethod(addEntityMethodName, getNMSClass("Entity"), CreatureSpawnEvent.SpawnReason.class);
+            }
+            addEntity.invoke(nmsWorld, entityParrot, CreatureSpawnEvent.SpawnReason.SHOULDER_ENTITY);
+
+            // nmsWorld.addWithUUID((net.minecraft.world.entity.Entity) entityParrot, CreatureSpawnEvent.SpawnReason.SHOULDER_ENTITY);
+            //1.16.5 and below =, with addEntity(ent, reason)
         }
-        if (!isRealParrot(player.getShoulderEntityRight())) {
-            removeParrot(Shoulder.RIGHT);
-        }
     }
 
-    public static boolean isRealParrot(Entity entity) {
-        return entity instanceof Parrot parrot && !parrot.getPersistentDataContainer().has(fakeParrotKey, PersistentDataType.BYTE);
+    private Class<?> getNMSClass(String name) throws ClassNotFoundException {
+        return Class.forName("net.minecraft.server." + version + "." + name);
+    }
+
+    private Class<?> getNMSBukkit(String name) throws ClassNotFoundException {
+        return Class.forName("org.bukkit.craftbukkit." + version + "." + name);
+    }
+
+
+    public static boolean isFakeParrot(Entity entity) {
+        return entity != null && entity.getCustomName() != null && entity.getCustomName().equals("§cThis is a bug please notify admins.");
     }
 
     public enum Shoulder {

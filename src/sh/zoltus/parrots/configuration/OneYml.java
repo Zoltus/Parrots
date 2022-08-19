@@ -21,7 +21,7 @@ public class OneYml extends YamlConfiguration {
 
     public OneYml(String name, File path) {
         this.file = new File(path, name);
-        options().parseComments(true);
+       // options().parseComments(true); //todo works with new versions only
         options().copyDefaults(true);
         options().copyHeader(true);
         reload();

@@ -11,6 +11,7 @@ import sh.zoltus.parrots.gui.ParrotGui;
 import sh.zoltus.parrots.player.Holder;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 public class ParrotsCMD extends Command {
@@ -21,11 +22,11 @@ public class ParrotsCMD extends Command {
         this.setAliases(yml.getOrDefault("aliases", new ArrayList<>()));
         this.description = "Parrots related commands";
         this.usageMessage = "/parrots <subcmd>";
-        //this.setPermission("Parrots");
     }
 
     public boolean execute(@NonNull CommandSender sender, @NonNull String commandLabel, String @NonNull [] args) {
-        if (args.length == 0 && sender instanceof Player player) { // /Parrots
+        if (args.length == 0 && sender instanceof Player) { // /Parrots
+            Player player = (Player) sender;
             ParrotGui parrotGui = ParrotGui.get(player);
             parrotGui.show();
         } else if (args.length > 0) {
@@ -43,10 +44,9 @@ public class ParrotsCMD extends Command {
             } else if (args.length == 2 && args0.equals("remove")) {
                 Holder holder = getHolder(sender, args0);
                 if (holder != null) {
-                    if (holder.hasFakeParrots()) {
-                        holder.removeParrot(Holder.Shoulder.BOTH);
+                    if (holder.removeFakeParrot(Holder.Shoulder.BOTH)) {
                         sender.sendMessage(yml.getMessage("Messages.YouRemovedParrot")
-                                .replaceAll("%PLAYER%", holder.player().getName()));
+                                .replaceAll("%PLAYER%", holder.getPlayer().getName()));
                     } else {
                         sender.sendMessage(yml.getMessage("Messages.PlayerDoesNotHaveParrot"));
                     }
@@ -56,7 +56,6 @@ public class ParrotsCMD extends Command {
             }
             //todo admin perm check cleanup
         }
-        //Command.broadcastCommandMessage(sender, ChatColor.GREEN + "Reload complete.");
         return true;
     }
 
@@ -84,7 +83,7 @@ public class ParrotsCMD extends Command {
 
     @Override
     public @NonNull List<String> tabComplete(@NonNull CommandSender sender, @NonNull String alias, String @NonNull [] args) throws IllegalArgumentException {
-        return List.of("sad");
+        return Arrays.asList("asd", "asdad");
     }
 }
 
