@@ -1,5 +1,6 @@
 package sh.zoltus.parrots.gui;
 
+import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.bukkit.event.inventory.InventoryClickEvent;
@@ -7,11 +8,11 @@ import org.bukkit.inventory.ItemStack;
 
 import java.util.function.Consumer;
 
+@Data
 public class Item {
 
-    @Getter @Setter
     private ParrotGui gui;
-    @Getter private ItemStack stack;
+    private ItemStack stack;
     private Consumer<InventoryClickEvent> click;
 
     public Item setStack(ItemStack stack) {

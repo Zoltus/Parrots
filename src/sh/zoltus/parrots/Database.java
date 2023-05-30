@@ -6,6 +6,7 @@ import lombok.SneakyThrows;
 import lombok.experimental.Accessors;
 import org.bukkit.Bukkit;
 import org.bukkit.OfflinePlayer;
+import org.bukkit.entity.Parrot;
 import org.bukkit.scheduler.BukkitScheduler;
 import org.sqlite.SQLiteConfig;
 import sh.zoltus.parrots.player.Holder;
@@ -19,7 +20,6 @@ public class Database {
     @Getter
     @Accessors(fluent = true)
     private static Database database;
-
     private Connection connection;
     private final Parrots plugin;
     private final BukkitScheduler scheduler = Bukkit.getScheduler();
@@ -33,6 +33,7 @@ public class Database {
         this.config.setTempStore(SQLiteConfig.TempStore.MEMORY);
         this.config.setSynchronous(SQLiteConfig.SynchronousMode.OFF);
         createTables();
+        saveUsersTask();
     }
 
     public static Database init(Parrots plugin) {
@@ -53,11 +54,11 @@ public class Database {
     private void createTables() {
         //@Language("SQLite")
         String table = "CREATE TABLE IF NOT EXISTS Parrots(" +
-                        "uuid TEXT NOT NULL UNIQUE, " +
-                        "shoulderleft TEXT, " +
-                        "shoulderright TEXT, " +
-                        "PRIMARY KEY (uuid) " +
-                        "); ";
+                "uuid TEXT NOT NULL UNIQUE, " +
+                "colorleft TEXT, " +
+                "colorright TEXT, " +
+                "PRIMARY KEY (uuid) " +
+                "); ";
         //Creates table
         try (Connection con = connection()
              ; Statement stmt = con.createStatement()) {
@@ -67,8 +68,9 @@ public class Database {
         }
     }
 
-    public void saveUsersAsync() {
-        scheduler.runTaskAsynchronously(plugin, this::saveUsers);
+    public void saveUsersTask() {
+        int SAVE_INTERVAL_MINUTES = 10;
+        scheduler.runTaskTimerAsynchronously(plugin, this::saveUsers, (SAVE_INTERVAL_MINUTES * 20L) * 60, (SAVE_INTERVAL_MINUTES * 20L) * 60);
     }
 
     /**
@@ -83,12 +85,12 @@ public class Database {
                 UUID uuid = entry.getKey();
                 Holder holder = entry.getValue();
                 pStm.setString(1, uuid.toString());
-                pStm.setString(2, holder.getParrotLeft().toString());
-                pStm.setString(3, holder.getParrotRight().toString());
+                pStm.setString(2, holder.getColorLeft().toString());
+                pStm.setString(3, holder.getColorRight().toString());
                 pStm.addBatch();
-                if (!holder.getPlayer().isOnline()) {
-                    holders.remove(uuid);
-                }
+              //  if (!holder.getPlayer().isOnline()) {
+               //     holders.remove(uuid);
+              //  }
             }
             pStm.executeBatch();
         } catch (SQLException e) {
@@ -103,26 +105,31 @@ public class Database {
      * @param offP offlinePlayer
      * @return OneUser
      */
-    public boolean loadPlayer(OfflinePlayer offP) {
-        String uuid = offP.getUniqueId().toString();
-        try (Connection con = connection()
-             ; PreparedStatement pStm = con.prepareStatement("SELECT * FROM Parrots WHERE uuid = ?")) {
-            pStm.setString(1, uuid);
-            try (ResultSet rs = pStm.executeQuery()) {
-                if (!rs.next()) { //Goes here if new user onasyncprelogin
-                    return false;
-                } else {
-                    Bukkit.getConsoleSender().sendMessage("§bFrom db");
-                   // gson.fromJson(rs.getString("data"), Holder.class);
-                    return true;
+    public void loadPlayer(OfflinePlayer offP) {
+        UUID uuid = offP.getUniqueId();
+        if (Holder.getHolders().containsKey(uuid)) {
+            return;
+        }
+        //todo improve
+        if (!offP.hasPlayedBefore()) { //If havent played before it just makes new
+            new Holder(uuid);
+        } else { //it trys to load from db
+            try (Connection con = connection()
+                 ; PreparedStatement pStm = con.prepareStatement("SELECT * FROM Parrots WHERE uuid = ?")) {
+                pStm.setString(1, uuid.toString());
+                try (ResultSet rs = pStm.executeQuery()) {
+                    if (rs.next()) { //Goes here if new user onasyncprelogin
+                        Bukkit.getConsoleSender().sendMessage("§bFrom db");
+                        Parrot.Variant colorLeft = Parrot.Variant.valueOf(rs.getString("colorleft"));
+                        Parrot.Variant colorRight = Parrot.Variant.valueOf(rs.getString("colorright"));
+                        new Holder(uuid, colorLeft, colorRight);
+                    } else {
+                        new Holder(uuid);
+                    }
                 }
+            } catch (SQLException e) {
+                Bukkit.getConsoleSender().sendMessage("§4Error loading user: " + offP.getName() + "\n §c" + e.getMessage());
             }
-        } catch (SQLException e) {
-            Bukkit.getConsoleSender().sendMessage("§4Error loading user: " + offP.getName() + "\n §c" + e.getMessage());
-            return false;
         }
     }
-
-
-
 }

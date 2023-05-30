@@ -1,5 +1,6 @@
 package sh.zoltus.parrots.gui;
 
+import lombok.Data;
 import lombok.Getter;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -14,15 +15,14 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+@Data
 public class ParrotGui {
     @Getter     //todo remove on quit
     private static final Map<UUID, ParrotGui> guis = new HashMap<>();
 
     private final Item[] items;
     private final Player player;
-    @Getter
     private final Inventory inventory;
-
 
     public static ParrotGui get(Player p) {
         return Optional.ofNullable(guis.get(p.getUniqueId())).orElseGet(() -> new ParrotGui(p, "title", 3));
