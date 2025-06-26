@@ -5,7 +5,6 @@ import dev.jorel.commandapi.CommandAPIBukkitConfig
 import fi.sulku.mc.parrots.command.ParrotCommand
 import org.bukkit.plugin.java.JavaPlugin
 
-
 class Parrots : JavaPlugin() {
 
     companion object {
