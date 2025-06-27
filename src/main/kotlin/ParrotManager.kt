@@ -14,10 +14,7 @@ import org.bukkit.entity.Parrot
 import org.bukkit.entity.Player
 import org.bukkit.event.EventHandler
 import org.bukkit.event.Listener
-import org.bukkit.event.player.PlayerBedLeaveEvent
-import org.bukkit.event.player.PlayerGameModeChangeEvent
-import org.bukkit.event.player.PlayerRespawnEvent
-import org.bukkit.event.player.PlayerToggleFlightEvent
+import org.bukkit.event.player.*
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
@@ -32,6 +29,9 @@ object ParrotManager : Listener {
     }
 
     @EventHandler
+    fun onPlayerJoin(event: PlayerJoinEvent) = restoreParrot(event.player)
+
+    @EventHandler
     fun onBedLeave(event: PlayerBedLeaveEvent) = restoreParrot(event.player)
 
     @EventHandler
@@ -44,8 +44,8 @@ object ParrotManager : Listener {
     @EventHandler
     fun onToggleFly(event: PlayerToggleFlightEvent) = restoreWithDelay(event.player, !event.isFlying)
 
-    fun restoreWithDelay(player: Player, condition: Boolean = true) {
-        if (condition) {
+    fun restoreWithDelay(player: Player, shouldRestore: Boolean = true) {
+        if (shouldRestore) {
             Bukkit.getScheduler().runTaskLater(Parrots.instance, Runnable {
                 restoreParrot(player)
             }, 2L)
