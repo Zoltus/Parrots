@@ -30,6 +30,7 @@ kotlin {
 
 tasks.withType<ShadowJar> {
     relocate("dev.jorel.commandapi", "fi.sulku.mc.parrots.lib.commandapi")
+    relocate("org.bstats", "fi.sulku.mc.parrots.bstats")
 }
 
 tasks.build {

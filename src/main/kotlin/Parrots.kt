@@ -2,7 +2,7 @@ package fi.sulku.mc.parrots
 
 import dev.jorel.commandapi.CommandAPI
 import dev.jorel.commandapi.CommandAPIBukkitConfig
-import fi.sulku.mc.parrots.command.ParrotCommand
+import org.bstats.bukkit.Metrics
 import org.bukkit.plugin.java.JavaPlugin
 
 class Parrots : JavaPlugin() {
@@ -19,9 +19,9 @@ class Parrots : JavaPlugin() {
 
     override fun onEnable() {
         CommandAPI.onEnable() // Loads CommandAPI
-        // this.metrics = Metrics(this, 12829)
-        ParrotCommand.register()
-        //Bukkit.getServer().pluginManager.registerEvents(this, this)
+        Metrics(this, 13235) // bStats ID for Parrots plugin
+        ParrotCommand.register() // Register the Parrot command
+        server.pluginManager.registerEvents(ParrotManager, this) // Register ParrotManager as an event listener
     }
 
     override fun onDisable() {}
