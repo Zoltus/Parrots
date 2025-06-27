@@ -86,13 +86,22 @@ object ParrotManager : Listener {
                 put("Silent", 1.toByte())
             }.handle
         }
-
-        val registry = WrappedDataWatcher.Registry.getNBTCompoundSerializer()
+                val registry = WrappedDataWatcher.Registry.getNBTCompoundSerializer()
+        // Get player's real shoulder data
+        val hasLeftRealParrot = player.shoulderEntityLeft != null
+        val hasRightRealParrot = player.shoulderEntityRight != null
+        // Add send fake parrot packet only to shoulders which don't contain real parrots
+        // This mostly only affects PaperMc "parrots-are-unaffected-by-player-movement: true" setting
+        // todo fix paper bug where parrot stays invisible if the parrot config is enable and player flies ect.
         val dataValues = listOfNotNull(
-            parrotData.leftVariant?.let { WrappedDataValue(19, registry, parrotTag) },
-            parrotData.rightVariant?.let { WrappedDataValue(20, registry, parrotTag) }
+            if (!hasLeftRealParrot && parrotData.leftVariant != null) {
+                WrappedDataValue(19, registry, parrotTag)
+            } else null,
+            if (!hasRightRealParrot && parrotData.rightVariant != null) {
+                WrappedDataValue(20, registry, parrotTag)
+            } else null
         )
-        // Send packets for each shoulder
+
         val packet = PacketContainer(PacketType.Play.Server.ENTITY_METADATA).apply {
             integers.write(0, player.entityId)
             dataValueCollectionModifier.write(0, dataValues)
