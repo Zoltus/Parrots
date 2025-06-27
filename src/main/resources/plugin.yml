@@ -3,3 +3,9 @@ main: fi.sulku.mc.parrots.Parrots
 version: 1.0
 depend: [ProtocolLib]
 api-version: '1.20'
+libraries:
+   - org.jetbrains.kotlin:kotlin-stdlib:2.1.10
+   - org.jetbrains.exposed:exposed-core:1.0.0-beta-2
+   - org.jetbrains.exposed:exposed-jdbc:1.0.0-beta-2
+   - mysql:mysql-connector-java:8.0.33
+   - com.zaxxer:HikariCP:6.3.0

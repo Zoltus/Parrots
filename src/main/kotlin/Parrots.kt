@@ -2,6 +2,7 @@ package fi.sulku.mc.parrots
 
 import dev.jorel.commandapi.CommandAPI
 import dev.jorel.commandapi.CommandAPIBukkitConfig
+import fi.sulku.mc.parrots.data.DatabaseManager
 import org.bstats.bukkit.Metrics
 import org.bukkit.plugin.java.JavaPlugin
 
@@ -13,6 +14,8 @@ class Parrots : JavaPlugin() {
             private set
     }
 
+    lateinit var database: DatabaseManager
+
     override fun onLoad() {
         CommandAPI.onLoad(CommandAPIBukkitConfig(this))
         instance = this
@@ -23,9 +26,10 @@ class Parrots : JavaPlugin() {
         Metrics(this, 13235) // bStats ID for Parrots plugin
         ParrotCommand.register() // Register the Parrot command
         server.pluginManager.registerEvents(ParrotManager, this) // Register ParrotManager as an event listener
+        this.database = DatabaseManager.init(this) // Initialize the database manager
     }
 
     override fun onDisable() {
-        //todo save
+        this.database.saveAll()
     }
 }
