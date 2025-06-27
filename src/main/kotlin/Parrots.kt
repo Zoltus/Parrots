@@ -7,6 +7,7 @@ import org.bukkit.plugin.java.JavaPlugin
 
 class Parrots : JavaPlugin() {
 
+    //todo mysql incase servers want to have on multiple servers
     companion object {
         lateinit var instance: Parrots
             private set
@@ -24,5 +25,7 @@ class Parrots : JavaPlugin() {
         server.pluginManager.registerEvents(ParrotManager, this) // Register ParrotManager as an event listener
     }
 
-    override fun onDisable() {}
+    override fun onDisable() {
+        //todo save
+    }
 }

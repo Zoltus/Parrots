@@ -2,3 +2,4 @@ name: Parrots
 main: fi.sulku.mc.parrots.Parrots
 version: 1.0
 depend: [ProtocolLib]
+api-version: '1.20'
