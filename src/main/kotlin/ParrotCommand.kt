@@ -25,14 +25,15 @@ object ParrotCommand {
             .withShortDescription("Displays the plugin version")
             .withUsage("/parrots version")
             .executesPlayer(PlayerCommandExecutor { player, args ->
-                //setShoulder(player)
+                showDialog(player)
+                player.sendMessage("awdad")
             })
 
         //todo /parrot <shoulder> <variant/none>? for player cmd
-        val set = CommandAPICommand("set")
+        val setOther = CommandAPICommand("set")
             .withShortDescription("Sets a parrot for a player")
             .withUsage("/parrots set <player> <shoulder> <variant/none>")
-            .withPermission("parrots.set")
+            .withPermission("parrots.set.other")
             .withArguments(
                 PlayerArgument("player"),
                 StringArgument("shoulder").replaceSuggestions(ArgumentSuggestions.strings("LEFT", "RIGHT", "BOTH")),
@@ -51,12 +52,32 @@ object ParrotCommand {
                 }
             })
 
+        val set = CommandAPICommand("set")
+            .withShortDescription("Sets a parrot for a player")
+            .withUsage("/parrots set <player> <shoulder> <variant/none>")
+            .withPermission("parrots.set")
+            .withArguments(
+                StringArgument("shoulder").replaceSuggestions(ArgumentSuggestions.strings("LEFT", "RIGHT", "BOTH")),
+                StringArgument("variant").replaceSuggestions(ArgumentSuggestions.strings(Parrot.Variant.entries.map { it.name } + "NONE"))
+            ).executesPlayer(PlayerCommandExecutor { player, args ->
+                val side = args.get("shoulder") as String
+                val color = args.get("variant") as String
+                val shoulder = Shoulder.valueOf(side.uppercase())
+
+                if (color == "NONE") {
+                    ParrotManager.setFakeParrot(player, shoulder, null)
+                } else {
+                    val variant = Parrot.Variant.valueOf(color.uppercase())
+                    ParrotManager.setFakeParrot(player, shoulder, variant)
+                }
+            })
+
         CommandAPICommand("parrots")
             .withShortDescription("Parrots related commands")
             .withUsage("/parrots <subcommand>")
             .withAliases("parrot", "parrots")
             .withPermission("parrots.menu")
-            .withSubcommands(reload, version, set)
+            .withSubcommands(reload, version, set, setOther)
             .override()
         //todo menu
     }
