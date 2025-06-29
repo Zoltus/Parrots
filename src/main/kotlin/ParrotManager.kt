@@ -1,11 +1,13 @@
 package fi.sulku.mc.parrots
 
-import com.comphenix.protocol.PacketType
-import com.comphenix.protocol.ProtocolLibrary
-import com.comphenix.protocol.events.PacketContainer
-import com.comphenix.protocol.wrappers.WrappedDataValue
-import com.comphenix.protocol.wrappers.WrappedDataWatcher
-import com.comphenix.protocol.wrappers.nbt.NbtFactory
+import com.github.retrooper.packetevents.PacketEvents
+import com.github.retrooper.packetevents.protocol.entity.data.EntityData
+import com.github.retrooper.packetevents.protocol.entity.data.EntityDataTypes
+import com.github.retrooper.packetevents.protocol.nbt.NBTByte
+import com.github.retrooper.packetevents.protocol.nbt.NBTCompound
+import com.github.retrooper.packetevents.protocol.nbt.NBTInt
+import com.github.retrooper.packetevents.protocol.nbt.NBTString
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerEntityMetadata
 import fi.sulku.mc.parrots.data.ParrotData
 import fi.sulku.mc.parrots.data.Shoulder
 import org.bukkit.Bukkit
@@ -68,10 +70,10 @@ object ParrotManager : Listener {
     @EventHandler
     fun onRespawn(event: PlayerCustomClickEvent) {
         val id = event.id.key
-        val player = event.player
-        val data = event.data!!
 
         if (id == "submit_parrot") {
+            val player = event.player
+            val data = event.data!!
             val leftCol = data.asJsonObject.get("left_shoulder").asString.uppercase()
             val rightCol = data.asJsonObject.get("right_shoulder").asString.uppercase()
 
@@ -124,45 +126,52 @@ object ParrotManager : Listener {
             }
         }
 
-        // Create the NBT tag for the parrot empty to remove
-        val parrotTag = if (variant == null) {
-            NbtFactory.ofCompound("").handle
+// Create the NBT tag for the parrot empty to remove
+        val parrotNbt = if (variant == null) {
+            NBTCompound()
         } else {
-            NbtFactory.ofCompound("").apply {
-                put("id", "minecraft:parrot")
-                put("Variant", variant.ordinal)
-                put("Sitting", 1.toByte())
-                put("Age", 0)
-                put("AgeLocked", 0.toByte())
-                put("Silent", 1.toByte())
-            }.handle
+            NBTCompound().apply {
+                // Entity ID
+                setTag("id", NBTString("minecraft:parrot"))
+                // Parrot variant (0=red, 1=blue, 2=green, 3=cyan, 4=gray)
+                setTag("Variant", NBTInt(variant.ordinal))
+                // Parrot is sitting
+                setTag("Sitting", NBTByte(1))
+                // Age (0 = adult)
+                setTag("Age", NBTInt(0))
+                // Age locked (prevents growing up/down)
+                setTag("AgeLocked", NBTByte(0))
+                // Silent (no sounds)
+                setTag("Silent", NBTByte(1))
+                // Optional: Custom name
+                // setTag("CustomName", NBTString("\"My Parrot\""))
+                // setTag("CustomNameVisible", NBTByte(1))
+            }
         }
-        val registry = WrappedDataWatcher.Registry.getNBTCompoundSerializer()
+
         // Get player's real shoulder data
         val hasLeftRealParrot = player.shoulderEntityLeft != null
         val hasRightRealParrot = player.shoulderEntityRight != null
         // Add send fake parrot packet only to shoulders which don't contain real parrots
         // This mostly only affects PaperMc "parrots-are-unaffected-by-player-movement: true" setting
         // todo fix paper bug where parrot stays invisible if the parrot config is enable and player flies ect.
+
         val dataValues = buildList {
             if (shoulder == Shoulder.LEFT || shoulder == Shoulder.BOTH) {
                 if (!hasLeftRealParrot) {
-                    add(WrappedDataValue(19, registry, parrotTag))
+                    add(EntityData(19, EntityDataTypes.NBT, parrotNbt))
                 }
             }
 
             if (shoulder == Shoulder.RIGHT || shoulder == Shoulder.BOTH) {
                 if (!hasRightRealParrot) {
-                    add(WrappedDataValue(20, registry, parrotTag))
+                    add(EntityData(20, EntityDataTypes.NBT, parrotNbt))
                 }
             }
         }
 
-        val packet = PacketContainer(PacketType.Play.Server.ENTITY_METADATA).apply {
-            integers.write(0, player.entityId)
-            dataValueCollectionModifier.write(0, dataValues)
-        }
+        val packet2 = WrapperPlayServerEntityMetadata(player.entityId, dataValues)
 
-        ProtocolLibrary.getProtocolManager().sendServerPacket(player, packet)
+        PacketEvents.getAPI().playerManager.sendPacket(player, packet2)
     }
 }

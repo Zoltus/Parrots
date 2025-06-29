@@ -1,70 +1,66 @@
 package fi.sulku.mc.parrots
 
+import com.github.retrooper.packetevents.PacketEvents
+import com.github.retrooper.packetevents.protocol.dialog.CommonDialogData
+import com.github.retrooper.packetevents.protocol.dialog.DialogAction
+import com.github.retrooper.packetevents.protocol.dialog.NoticeDialog
+import com.github.retrooper.packetevents.protocol.dialog.action.DynamicCustomAction
+import com.github.retrooper.packetevents.protocol.dialog.button.ActionButton
+import com.github.retrooper.packetevents.protocol.dialog.button.CommonButtonData
+import com.github.retrooper.packetevents.protocol.dialog.input.Input
+import com.github.retrooper.packetevents.protocol.dialog.input.SingleOptionInputControl
+import com.github.retrooper.packetevents.resources.ResourceLocation
+import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerShowDialog
+import net.kyori.adventure.text.Component
 import net.md_5.bungee.api.ChatColor
-import net.md_5.bungee.api.chat.ComponentBuilder
-import net.md_5.bungee.api.dialog.DialogBase
-import net.md_5.bungee.api.dialog.NoticeDialog
-import net.md_5.bungee.api.dialog.action.ActionButton
-import net.md_5.bungee.api.dialog.action.CustomClickAction
-import net.md_5.bungee.api.dialog.input.DialogInput
-import net.md_5.bungee.api.dialog.input.InputOption
-import net.md_5.bungee.api.dialog.input.SingleOptionInput
 import org.bukkit.entity.Player
+
 
 fun showDialog(player: Player) {
     //todo config
+
     val options: List<Pair<String, ChatColor>> = listOf(
+        "none" to ChatColor.WHITE,
         "red" to ChatColor.RED,
         "blue" to ChatColor.BLUE,
         "green" to ChatColor.GREEN,
         "cyan" to ChatColor.AQUA,
-        "gray" to ChatColor.GRAY,
-        "none" to ChatColor.WHITE
+        "gray" to ChatColor.GRAY
     )
-    val parrColors = options.mapIndexed { index, pair ->
-        val (name, color) = pair
-        InputOption(name.lowercase(), ComponentBuilder(name.lowercase()).color(color).build(), index == 0)
-    }.toTypedArray()
 
-    val inputs = listOf<DialogInput>(
-        SingleOptionInput(
-            "left_shoulder", ComponentBuilder("Left Shoulder").build(),
-            *parrColors
+    val inputs = listOf(
+        Input(
+            "left_shoulder", SingleOptionInputControl(
+                500, options.mapIndexed { index, pair ->
+                    SingleOptionInputControl.Entry(
+                        pair.first, Component.text(pair.first), index == 0
+                    )
+                }, Component.text("Left Shoulder"), true
+            )
         ),
-        SingleOptionInput(
-            "right_shoulder", ComponentBuilder("Right Shoulder").build(),
-            *parrColors
-        )
+        Input(
+            "right_shoulder", SingleOptionInputControl(
+                500, options.mapIndexed { index, pair ->
+                    SingleOptionInputControl.Entry(
+                        pair.first, Component.text(pair.first), index == 0
+                    )
+                }, Component.text("Right Shoulder"), true
+            )
+        ),
     )
 
     val action = ActionButton(
-        ComponentBuilder("Submit").build(),
-        CustomClickAction("submit_parrot")
+        CommonButtonData(Component.text("submit_parrot"), null, 50),
+        DynamicCustomAction(ResourceLocation("parrots:submit_parrot"), null)
     )
 
-    val dialogBase = DialogBase(ComponentBuilder("Parrot Selection").build())
-        .inputs(inputs)
-        .afterAction(DialogBase.AfterAction.CLOSE)
-        .pause(false)
+    val notice = NoticeDialog(
+        CommonDialogData(
+            Component.text("Parrot Selection"), null, true, false, DialogAction.CLOSE, emptyList(), inputs
+        ), action
+    )
 
-    val dialog = NoticeDialog(dialogBase, action)
+    val packet = WrapperPlayServerShowDialog(notice)
 
-    player.showDialog(dialog)
-
-    /*    var notice: Dialog = NoticeDialog(DialogBase(ComponentBuilder("Hello").color(ChatColor.RED).build()))
-        player.showDialog(notice)
-
-        var base = DialogBase(ComponentBuilder("Hello").color(ChatColor.RED).build())
-            .inputs(
-                listOf<DialogInput>(
-                    TextInput("first", ComponentBuilder("First").build()),
-                    TextInput("second", ComponentBuilder("Second").build())
-                )
-            )
-        val noticeDialog = NoticeDialog(base)
-        notice = noticeDialog.action(ActionButton(ComponentBuilder("Submit Button").build(), CustomClickAction("customform")))
-
-        val build: BaseComponent = ComponentBuilder("click me").event(ShowDialogClickEvent(notice)).build()
-
-        player.spigot().sendMessage(build)*/
+    PacketEvents.getAPI().playerManager.sendPacket(player, packet)
 }
