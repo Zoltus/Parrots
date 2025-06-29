@@ -11,56 +11,49 @@ import com.github.retrooper.packetevents.protocol.dialog.input.Input
 import com.github.retrooper.packetevents.protocol.dialog.input.SingleOptionInputControl
 import com.github.retrooper.packetevents.resources.ResourceLocation
 import com.github.retrooper.packetevents.wrapper.play.server.WrapperPlayServerShowDialog
+import fi.sulku.mc.parrots.ParrotManager.userParrotData
 import net.kyori.adventure.text.Component
-import net.md_5.bungee.api.ChatColor
+import net.kyori.adventure.text.format.NamedTextColor
+import net.kyori.adventure.text.format.TextColor
+import org.bukkit.entity.Parrot
 import org.bukkit.entity.Player
 
-
 fun showDialog(player: Player) {
-    //todo config
-
-    val options: List<Pair<String, ChatColor>> = listOf(
-        "none" to ChatColor.WHITE,
-        "red" to ChatColor.RED,
-        "blue" to ChatColor.BLUE,
-        "green" to ChatColor.GREEN,
-        "cyan" to ChatColor.AQUA,
-        "gray" to ChatColor.GRAY
-    )
+    val currentData = userParrotData[player.uniqueId]
 
     val inputs = listOf(
-        Input(
-            "left_shoulder", SingleOptionInputControl(
-                500, options.mapIndexed { index, pair ->
-                    SingleOptionInputControl.Entry(
-                        pair.first, Component.text(pair.first), index == 0
-                    )
-                }, Component.text("Left Shoulder"), true
-            )
-        ),
-        Input(
-            "right_shoulder", SingleOptionInputControl(
-                500, options.mapIndexed { index, pair ->
-                    SingleOptionInputControl.Entry(
-                        pair.first, Component.text(pair.first), index == 0
-                    )
-                }, Component.text("Right Shoulder"), true
-            )
-        ),
+        createShoulderInput("left_shoulder", "Left Shoulder", currentData?.leftVariant),
+        createShoulderInput("right_shoulder", "Right Shoulder", currentData?.rightVariant)
     )
 
-    val action = ActionButton(
-        CommonButtonData(Component.text("submit_parrot"), null, 50),
-        DynamicCustomAction(ResourceLocation("parrots:submit_parrot"), null)
+    val dialog = NoticeDialog(
+        CommonDialogData(Component.text("Parrot Selection"), null, true, false, DialogAction.CLOSE, emptyList(), inputs),
+        ActionButton(
+            CommonButtonData(Component.text("Apply Changes"), null, 120),
+            DynamicCustomAction(ResourceLocation("parrots:submit_parrot"), null)
+        )
     )
 
-    val notice = NoticeDialog(
-        CommonDialogData(
-            Component.text("Parrot Selection"), null, true, false, DialogAction.CLOSE, emptyList(), inputs
-        ), action
-    )
+    PacketEvents.getAPI().playerManager.sendPacket(player, WrapperPlayServerShowDialog(dialog))
+}
 
-    val packet = WrapperPlayServerShowDialog(notice)
+private fun createShoulderInput(id: String, label: String, currentVariant: Parrot.Variant?): Input {
+    val options = ParrotOption.entries.map { it.toInputEntry(currentVariant) }
+    return Input(id, SingleOptionInputControl(200, options, Component.text(label), true))
+}
 
-    PacketEvents.getAPI().playerManager.sendPacket(player, packet)
+private enum class ParrotOption(val displayName: String, val color: TextColor, val variant: Parrot.Variant?) {
+    NONE("None", NamedTextColor.WHITE, null),
+    RED("Red", NamedTextColor.RED, Parrot.Variant.RED),
+    BLUE("Blue", NamedTextColor.BLUE, Parrot.Variant.BLUE),
+    GREEN("Green", NamedTextColor.GREEN, Parrot.Variant.GREEN),
+    CYAN("Cyan", NamedTextColor.AQUA, Parrot.Variant.CYAN),
+    GRAY("Gray", NamedTextColor.GRAY, Parrot.Variant.GRAY);
+
+    fun toInputEntry(currentVariant: Parrot.Variant?) =
+        SingleOptionInputControl.Entry(
+            name.lowercase(),
+            Component.text(displayName).color(color),
+            this.variant == currentVariant
+        )
 }
