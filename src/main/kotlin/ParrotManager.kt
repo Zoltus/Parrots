@@ -105,6 +105,11 @@ object ParrotManager : Listener {
         }
     }
 
+    private fun canHaveParrot(player: Player) =
+        player.gameMode != GameMode.SPECTATOR && !player.isDead && !player.isSleeping && !player.isFlying
+
+
+    //todo restore only if canHave parrot/ send packet only then
     fun restoreParrot(player: Player) {
         val data = userParrotData[player.uniqueId] ?: return
         // Restore left shoulder parrot
@@ -126,7 +131,9 @@ object ParrotManager : Listener {
             }
         }
 
-// Create the NBT tag for the parrot empty to remove
+        if (!canHaveParrot(player)) return // Dont send packets if player can't have parrot
+
+        // Create the NBT tag for the parrot empty to remove
         val parrotNbt = if (variant == null) {
             NBTCompound()
         } else {
